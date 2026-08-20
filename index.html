@@ -226,7 +226,7 @@
           </div>
 
           <!-- Generate Button -->
-          <button onclick="generateTop50Schedules(true)" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs shadow-md shadow-blue-500/20">
+          <button onclick="handleGenerateButtonClick()" id="generateSchedulesBtn" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs shadow-md shadow-blue-500/20 cursor-pointer">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
             <span data-i18n="generateBtn">تحديث الجداول المقترحة</span>
           </button>
@@ -1397,10 +1397,31 @@
       if (currentIndex < currentSchedules.length - 1) showSchedule(currentIndex + 1);
     }
 
+    function handleGenerateButtonClick() {
+      const btn = document.getElementById('generateSchedulesBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2.5"></path></svg> <span>${currentLang === 'en' ? 'Calculating...' : 'جاري التحديث...'}</span>`;
+        setTimeout(() => {
+          generateTop50Schedules(true);
+          btn.disabled = false;
+          btn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> <span>${TRANSLATIONS[currentLang].generateBtn || (currentLang === 'en' ? 'Update Schedules' : 'تحديث الجداول المقترحة')}</span>`;
+        }, 150);
+      } else {
+        generateTop50Schedules(true);
+      }
+    }
+
     function renderProportionalCalendar(sched) {
       const DAY_START_MIN = 480; 
       const TOTAL_DAY_MINS = 600; 
       const isDarkMode = document.documentElement.classList.contains('dark');
+
+      const calEl = document.getElementById('calendarDaysContainer');
+      if (calEl) {
+        calEl.style.opacity = '0.7';
+        setTimeout(() => { calEl.style.opacity = '1'; }, 100);
+      }
 
       const byDay = {};
       DAYS_MAP.ar.forEach(d => byDay[d] = []);
