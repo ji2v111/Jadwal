@@ -226,7 +226,7 @@
           </div>
 
           <!-- Generate Button -->
-          <button onclick="generateTop50Schedules()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs shadow-md shadow-blue-500/20">
+          <button onclick="generateTop50Schedules(true)" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs shadow-md shadow-blue-500/20">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
             <span data-i18n="generateBtn">تحديث الجداول المقترحة</span>
           </button>
@@ -1092,7 +1092,8 @@
       return result;
     }
 
-    function generateTop50Schedules() {
+    function generateTop50Schedules(isUserClick = false) {
+      rawCombinationBuckets = [];
       if (Object.keys(normalizedCourses).length === 0) {
         currentSchedules = [];
         showSchedule(0);
@@ -1253,10 +1254,10 @@
       const diagEl = document.getElementById('diagModal');
       if (diagEl) diagEl.classList.add('hidden');
 
-      sortAndRefreshSchedules();
+      sortAndRefreshSchedules(isUserClick);
     }
 
-    function sortAndRefreshSchedules() {
+    function sortAndRefreshSchedules(isUserClick = false) {
       if (!rawCombinationBuckets || rawCombinationBuckets.length === 0) {
         currentSchedules = [];
         showSchedule(0);
@@ -1297,6 +1298,10 @@
       currentSchedules = interleaved;
       currentIndex = 0;
       showSchedule(0);
+
+      if (isUserClick) {
+        showToast(currentLang === 'en' ? `Generated ${currentSchedules.length} schedules!` : `تم تحديث وتوليد ${currentSchedules.length} جدولاً بنجاح! 🚀`);
+      }
     }
 
     function showSchedule(idx) {
