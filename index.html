@@ -105,12 +105,18 @@
       </div>
 
       <!-- Header Actions -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-wrap">
         
-        <!-- Bookmarklet Tool Button -->
+        <!-- Import Courses Tool Button -->
         <button onclick="openBookmarkletModal()" class="bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 text-blue-700 dark:text-blue-400 text-xs font-bold py-1.5 px-3 rounded-lg border border-blue-200 dark:border-blue-500/30 transition flex items-center gap-1.5 shadow-2xs">
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-          <span data-i18n="bookmarkletBtn">زر سحب المقررات (البوكمارك)</span>
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span data-i18n="importCoursesBtn">سحب المقررات</span>
+        </button>
+
+        <!-- Clear Data / Reset Cache Button -->
+        <button onclick="clearAllData()" id="clearDataBtn" title="مسح البيانات والذاكرة المؤقتة" class="bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-400 text-xs font-bold py-1.5 px-3 rounded-lg border border-rose-200 dark:border-rose-800/60 transition flex items-center gap-1.5 shadow-2xs">
+          <svg class="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+          <span data-i18n="clearDataBtn">مسح البيانات</span>
         </button>
 
         <!-- Theme Toggle (Light / Dark) -->
@@ -136,13 +142,13 @@
         <!-- Upload JSON -->
         <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-2xs">
           <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-          <span data-i18n="uploadJsonBtn">رفع ملف JSON</span>
+          <span data-i18n="uploadJsonBtn">رفع JSON</span>
           <input type="file" id="fileInput" accept=".json" class="hidden" onchange="handleFileUpload(event)">
         </label>
 
         <!-- Language Switcher -->
         <button onclick="toggleLanguage()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-2 shadow-2xs">
-          <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>
           <span id="langBtnText">English</span>
         </button>
       </div>
@@ -407,8 +413,8 @@
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
           </div>
           <div>
-            <h3 class="text-sm font-bold text-slate-900 dark:text-white" data-i18n="bmModalTitle">أداة الاستخراج التلقائي من البوابة</h3>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400" data-i18n="bmModalSubtitle">اسحب الزر لمفضلة متصفحك واضغط عليه داخل صفحة المقررات</p>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white" data-i18n="bmModalTitle">أداة سحب المقررات من بوابة الجامعة</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400" data-i18n="bmModalSubtitle">اسحب هذا الزر إلى شريط المفضلة لديك واضغط عليه داخل صفحة المقررات</p>
           </div>
         </div>
         <button onclick="closeBookmarkletModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
@@ -421,11 +427,11 @@
         <div class="flex items-start gap-2.5 bg-slate-50 dark:bg-slate-850 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
           <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 font-sans">1</span>
           <div>
-            <p class="font-bold text-slate-900 dark:text-white" data-i18n="bmStep1Title">اسحب الزر التالي إلى شريط المفضلة (Bookmarks Bar):</p>
+            <p class="font-bold text-slate-900 dark:text-white" data-i18n="bmStep1Title">اسحب الزر التالي إلى شريط المفضلة أعلى المتصفح:</p>
             <div class="mt-2 flex items-center gap-2 flex-wrap">
               <a id="bmDraggableLink" href="#" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm cursor-grab active:cursor-grabbing select-none" onclick="event.preventDefault(); showToast('اسحب هذا الزر بالماوس إلى شريط المفضلة بالأعلى!');">
-                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                <span>⚡ استخراج جدول المقررات</span>
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span data-i18n="bmBtnText">⚡ سحب المقررات آلياً</span>
               </a>
               <span class="text-[11px] text-slate-400 font-medium" data-i18n="bmDragHint">← اسحب هذا الزر للأعلى</span>
             </div>
@@ -444,7 +450,7 @@
           <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 font-sans">3</span>
           <div>
             <p class="font-bold text-slate-900 dark:text-white" data-i18n="bmStep3Title">اضغط على الزر في المفضلة:</p>
-            <p class="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5" data-i18n="bmStep3Desc">سيقوم السكريبت بقراءة جميع الشعب وتقليب الصفحات آلياً ونقلك إلى هنا مع أفضل 50 جدول جاهزة!</p>
+            <p class="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5" data-i18n="bmStep3Desc">سيقوم السكريبت بسحب جميع الشعب وتقليب الصفحات آلياً ونقلك إلى هنا مع أفضل 50 جدول جاهزة!</p>
           </div>
         </div>
       </div>
@@ -453,7 +459,7 @@
       <div class="pt-2 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
         <button onclick="copyBookmarkletCode()" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-bold flex items-center gap-1.5">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-          <span data-i18n="bmCopyCode">نسخ كود البوكمارك يدوياً</span>
+          <span data-i18n="bmCopyCode">نسخ كود الاستخراج يدوياً</span>
         </button>
 
         <button onclick="closeBookmarkletModal()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold px-4 py-1.5 rounded-lg text-xs transition">
@@ -502,17 +508,19 @@
         onlyMandatory: "المقررات الأساسية فقط",
         dayOffText: "يوم فراغ",
         notAssigned: "لم يحدد",
-        uploadJsonBtn: "رفع ملف JSON",
-        bookmarkletBtn: "زر سحب المقررات (البوكمارك)",
-        bmModalTitle: "أداة الاستخراج التلقائي من البوابة",
-        bmModalSubtitle: "اسحب الزر لمفضلة متصفحك واضغط عليه داخل صفحة المقررات",
-        bmStep1Title: "اسحب الزر التالي إلى شريط المفضلة (Bookmarks Bar):",
+        uploadJsonBtn: "رفع JSON",
+        importCoursesBtn: "سحب المقررات",
+        clearDataBtn: "مسح البيانات",
+        bmBtnText: "⚡ سحب المقررات آلياً",
+        bmModalTitle: "أداة سحب المقررات من بوابة الجامعة",
+        bmModalSubtitle: "اسحب هذا الزر إلى شريط المفضلة لديك واضغط عليه داخل صفحة المقررات",
+        bmStep1Title: "اسحب الزر التالي إلى شريط المفضلة أعلى المتصفح:",
         bmDragHint: "← اسحب هذا الزر للأعلى",
         bmStep2Title: "افتح بوابة الجامعة:",
         bmStep2Desc: "توجه إلى صفحة (المقررات المطروحة وفق الخطة).",
         bmStep3Title: "اضغط على الزر في المفضلة:",
-        bmStep3Desc: "سيقوم السكريبت بقراءة جميع الشعب وتقليب الصفحات آلياً ونقلك إلى هنا مع أفضل 50 جدول جاهزة!",
-        bmCopyCode: "نسخ كود البوكمارك يدوياً",
+        bmStep3Desc: "سيقوم السكريبت بسحب جميع الشعب وتقليب الصفحات آلياً ونقلك إلى هنا مع أفضل 50 جدول جاهزة!",
+        bmCopyCode: "نسخ كود الاستخراج يدوياً",
         closeModal: "إغلاق"
       },
       en: {
@@ -552,16 +560,18 @@
         dayOffText: "Day Off",
         notAssigned: "TBA",
         uploadJsonBtn: "Upload JSON",
-        bookmarkletBtn: "Portal Bookmarklet Scraper",
-        bmModalTitle: "Automatic Portal Data Scraper",
-        bmModalSubtitle: "Drag to your browser bookmarks bar & click inside registration page",
+        importCoursesBtn: "Import Courses",
+        clearDataBtn: "Clear Data",
+        bmBtnText: "⚡ Import Courses",
+        bmModalTitle: "Portal Course Importer Tool",
+        bmModalSubtitle: "Drag this button to your bookmarks bar and click inside portal",
         bmStep1Title: "Drag the button below to your Bookmarks Bar:",
         bmDragHint: "← Drag this button up",
         bmStep2Title: "Open your University Portal:",
         bmStep2Desc: "Navigate to the offered courses page in EduGate / Portal.",
-        bmStep3Title: "Click the Bookmark in your browser:",
+        bmStep3Title: "Click the bookmark in your browser bar:",
         bmStep3Desc: "It will extract all sections across all pages & open this page with top 50 schedules!",
-        bmCopyCode: "Copy Bookmarklet Code Manually",
+        bmCopyCode: "Copy Importer Code",
         closeModal: "Close"
       }
     };
@@ -1443,68 +1453,134 @@
       showToast(currentLang === 'en' ? 'Calendar exported (16 weeks)' : 'تم تصدير ملف التقويم (16 أسبوع)');
     }
 
+    function clearAllData() {
+      if (confirm(currentLang === 'en' ? 'Are you sure you want to clear all imported courses and saved data?' : 'هل أنت متأكد من رغبتك في مسح كافة المقررات والبيانات المحفوظة؟')) {
+        localStorage.removeItem('jadwal_saved_data');
+        rawData = [];
+        normalizedCourses = {};
+        currentSchedules = [];
+        currentIndex = 0;
+        renderCoursesList();
+        showSchedule(0);
+        showToast(currentLang === 'en' ? 'Data and cache cleared successfully!' : 'تم مسح البيانات والذاكرة المؤقتة بنجاح!');
+      }
+    }
+
     function showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets) {
       const modal = document.getElementById('diagModal');
       let reasons = [];
-
-      for (const code of mandatoryCodes) {
-        const c = normalizedCourses[code];
-        const th = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
-        const pr = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
-        if (th.length === 0 || (c.practical.length > 0 && pr.length === 0)) {
-          reasons.push(currentLang === 'en' 
-            ? `Mandatory course <strong>${getTranslatedCourseName(c.name)}</strong> has no open sections.`
-            : `المقرر الإجباري <strong>${c.name}</strong> لا توجد له شُعب متاحة.`);
-        }
-      }
 
       const mandHours = mandatoryCodes.reduce((sum, c) => sum + normalizedCourses[c].creditHours, 0);
       const remainingHours = targetHours - mandHours;
       const optCodes = Object.keys(normalizedCourses).filter(c => !mandatoryCodes.includes(c) && !excludedCodes.includes(c));
       const maxPossible = mandHours + optCodes.reduce((s, c) => s + normalizedCourses[c].creditHours, 0);
 
-      if (targetHours > maxPossible) {
-        reasons.push(currentLang === 'en' 
-          ? `Requested hours (${targetHours} CR) exceed total available credits (${maxPossible} CR).`
-          : `عدد الساعات المطلوب (${targetHours}س) يتجاوز إجمالي الساعات المتاحة بعد الاستبعاد.`);
-      } else if (validSets.length === 0) {
+      // Check 1: All courses excluded
+      if (mandatoryCodes.length === 0 && optCodes.length === 0) {
         reasons.push(currentLang === 'en'
-          ? `Available courses cannot sum up to exactly ${remainingHours} remaining credits.`
-          : `المقررات المتاحة لا يمكن أن تجمع ${remainingHours} ساعة إضافية بدقة.`);
-      } else if (reasons.length === 0) {
-        reasons.push(currentLang === 'en'
-          ? `Found <strong>${validSets.length} course sets</strong>, but 100% have direct timetable overlaps.`
-          : `تم العثور على <strong>${validSets.length} تشكيلة</strong>، ولكن جميع الشُعب المطروحة تتعارض زمنياً في نفس الساعات.`);
+          ? 'All available courses are excluded. Please mark at least one course as mandatory or elective.'
+          : 'جميع المقررات مستبعدة حالياً! يرجى تحديد مقرر واحد على الأقل كإجباري أو اختياري.');
       }
+
+      // Check 2: Mandatory hours exceed target
+      if (mandHours > targetHours) {
+        reasons.push(currentLang === 'en'
+          ? `Mandatory courses sum to <strong>${mandHours} CR</strong>, which exceeds your target of <strong>${targetHours} CR</strong>. Increase target hours or make some courses elective.`
+          : `مجموع ساعات المقررات الإجبارية (<strong>${mandHours} ساعة</strong>) أكبر من الساعات المستهدفة (<strong>${targetHours} ساعة</strong>). يرجى زيادة الساعات أو جعل بعض المواد اختيارية.`);
+      }
+
+      // Check 3: Closed sections in mandatory courses
+      for (const code of mandatoryCodes) {
+        const c = normalizedCourses[code];
+        const th = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
+        const pr = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
+        if (th.length === 0 || (c.practical.length > 0 && pr.length === 0)) {
+          reasons.push(currentLang === 'en' 
+            ? `Mandatory course <strong>${getTranslatedCourseName(c.name)}</strong> has only closed sections. Enable "Include Closed Sections" or exclude this course.`
+            : `جميع شُعب المقرر الإجباري <strong>${c.name}</strong> مغلقة. فعّل خيار "إتاحة الشعب المغلقة" أو استبعد المقرر.`);
+        }
+      }
+
+      // Check 4: Target exceeds available
+      if (targetHours > maxPossible && reasons.length === 0) {
+        reasons.push(currentLang === 'en' 
+          ? `Target (${targetHours} CR) exceeds total available credits (${maxPossible} CR) after exclusions.`
+          : `عدد الساعات المستهدفة (${targetHours}س) يتجاوز إجمالي الساعات المتاحة (${maxPossible}س) بعد استبعاد المواد.`);
+      }
+
+      // Check 5: Incompatible course credit combinations
+      if (validSets.length === 0 && mandHours <= targetHours && reasons.length === 0) {
+        reasons.push(currentLang === 'en'
+          ? `No combination of elective courses can sum up to exactly ${remainingHours} remaining credits.`
+          : `المقررات الاختيارية المتاحة لا يمكن أن تجمع ${remainingHours} ساعة متبقية بدقة للوصول إلى ${targetHours} ساعة.`);
+      }
+
+      // Check 6: Timetable clash between courses
+      if (reasons.length === 0) {
+        reasons.push(currentLang === 'en'
+          ? `Found ${validSets.length} potential course sets, but sections have 100% timetable overlaps at the same hours.`
+          : `تم العثور على ${validSets.length} تشكيلة للمواد، ولكن جميع شُعبها تتعارض زمنياً في نفس الساعات.`);
+      }
+
+      // Calculate dynamic possible credit hours from active courses
+      const allActiveCodes = Object.keys(normalizedCourses).filter(c => !excludedCodes.includes(c));
+      const possibleHoursSet = new Set();
+      for (let r = 1; r <= allActiveCodes.length; r++) {
+        const combs = getCombinations(allActiveCodes, r);
+        for (const comb of combs) {
+          const h = comb.reduce((s, c) => s + normalizedCourses[c].creditHours, 0);
+          if (h >= 9 && h <= 24) possibleHoursSet.add(h);
+        }
+      }
+
+      if (mandHours >= 9 && mandHours <= 24) possibleHoursSet.add(mandHours);
+
+      const sortedSuggestedHours = Array.from(possibleHoursSet)
+        .sort((a, b) => Math.abs(a - targetHours) - Math.abs(b - targetHours))
+        .slice(0, 4);
 
       modal.innerHTML = `
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl max-w-md w-full p-5 text-start space-y-4 shadow-2xl transition-colors">
           <div class="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
-            <div>
-              <h3 class="text-sm font-bold text-slate-900 dark:text-white">${currentLang === 'en' ? 'Unable to Generate Schedule' : 'تعذر إنشاء جدول بتلك الشروط'}</h3>
-              <p class="text-[11px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">${currentLang === 'en' ? `Target: ${targetHours} CR | Mandatory: ${mandatoryCodes.length}` : `الهدف: ${targetHours} ساعة | الإجباري: ${mandatoryCodes.length} مقرر`}</p>
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 flex items-center justify-center font-bold">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 dark:text-white">${currentLang === 'en' ? 'Unable to Generate Schedules' : 'تعذر توليد جداول بتلك الشروط'}</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 font-semibold mt-0.5">${currentLang === 'en' ? `Target: ${targetHours} CR | Mandatory: ${mandHours} CR` : `الهدف: ${targetHours} ساعة | الإجباري: ${mandHours} ساعة`}</p>
+              </div>
             </div>
+            <button onclick="document.getElementById('diagModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
           </div>
 
           <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3 text-xs">
-            <div class="font-bold text-rose-800 dark:text-rose-300 mb-1">${currentLang === 'en' ? 'Reasons:' : 'السبب:'}</div>
-            <ul class="list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300 leading-relaxed">
+            <div class="font-bold text-rose-800 dark:text-rose-300 mb-1 flex items-center gap-1.5">
+              <span>${currentLang === 'en' ? 'Why this happened:' : 'التشخيص والسبب:'}</span>
+            </div>
+            <ul class="list-disc list-inside space-y-1.5 text-slate-700 dark:text-slate-300 leading-relaxed text-[11px]">
               ${reasons.map(r => `<li>${r}</li>`).join('')}
             </ul>
           </div>
 
-          <div class="space-y-1.5 text-xs">
-            <div class="font-bold text-slate-800 dark:text-slate-200">${currentLang === 'en' ? 'Suggested Targets:' : 'ساعات بديلة مقترحة:'}</div>
-            <div class="flex flex-wrap gap-1.5">
-              <button onclick="setHoursAndRegenerate(22)" class="bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-600/50 font-bold px-2.5 py-1 rounded-lg transition text-xs font-sans">${currentLang === 'en' ? '22 Credits (101 sets)' : '22 ساعة (101 جدول)'}</button>
-              <button onclick="setHoursAndRegenerate(20)" class="bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-600/50 font-bold px-2.5 py-1 rounded-lg transition text-xs font-sans">${currentLang === 'en' ? '20 Credits (270 sets)' : '20 ساعة (270 جدول)'}</button>
-              <button onclick="setHoursAndRegenerate(19)" class="bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-600/50 font-bold px-2.5 py-1 rounded-lg transition text-xs font-sans">${currentLang === 'en' ? '19 Credits (364 sets)' : '19 ساعة (364 جدول)'}</button>
+          ${sortedSuggestedHours.length > 0 ? `
+            <div class="space-y-1.5 text-xs">
+              <div class="font-bold text-slate-800 dark:text-slate-200">${currentLang === 'en' ? 'Try alternative target credits:' : 'جرب ساعات بديلة بضغطة زر:'}</div>
+              <div class="flex flex-wrap gap-1.5">
+                ${sortedSuggestedHours.map(h => `
+                  <button onclick="setHoursAndRegenerate(${h})" class="bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-600/50 font-bold px-2.5 py-1 rounded-lg transition text-xs font-sans">
+                    ${h} ${currentLang === 'en' ? 'Credits' : 'ساعة'}
+                  </button>
+                `).join('')}
+              </div>
             </div>
-          </div>
+          ` : ''}
 
-          <div class="flex justify-end pt-2">
-            <button onclick="document.getElementById('diagModal').classList.add('hidden')" class="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition border border-transparent dark:border-slate-700">
-              ${currentLang === 'en' ? 'Close' : 'إغلاق'}
+          <div class="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button onclick="document.getElementById('diagModal').classList.add('hidden')" class="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">
+              ${currentLang === 'en' ? 'Understood' : 'حسناً، فهمت'}
             </button>
           </div>
         </div>
