@@ -46,18 +46,24 @@
       else if (h.includes('نوع') || h.includes('نشاط') || h.includes('type')) colType = i;
       else if (h.includes('ساعات') || h.includes('معتمدة') || h.includes('hour') || h.includes('cr')) colHours = i;
       else if (h.includes('حالة') || h.includes('status')) colStatus = i;
-      else if (h.includes('محاضر') || h.includes('أستاذ') || h.includes('مدرس') || h.includes('instructor')) colInst = i;
+      else if (h.includes('محاضر') || h.includes('استاذ') || h.includes('أستاذ') || h.includes('مدرس') || h.includes('تدريس') || h.includes('instructor') || h.includes('faculty') || h.includes('teacher')) colInst = i;
     });
 
     const sectionInputs = document.querySelectorAll('[id*=":offeredCoursesTable:"][id$=":section"]');
     if (sectionInputs.length > 0) {
       sectionInputs.forEach(input => {
         const index = input.id.split(':')[2];
-        const instructorEl = document.getElementById(`myForm:offeredCoursesTable:${index}:instructor`);
-        const examEl = document.getElementById(`myForm:offeredCoursesTable:${index}:examPeriod`);
         const row = input.closest('tr');
         const cells = row ? Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim()) : [];
 
+        // Comprehensive instructor detection:
+        const instEl = row ? (row.querySelector('[id*=":instructor"]') || row.querySelector('[id*="instructor"]') || row.querySelector('[id*="faculty"]') || row.querySelector('[id*="teacher"]') || row.querySelector('[id*="staff"]')) : null;
+        let instName = '';
+        if (instEl && instEl.innerText.trim()) instName = instEl.innerText.trim();
+        else if (colInst !== -1 && cells[colInst]) instName = cells[colInst];
+        else if (cells[6] && !cells[6].match(/^[0-9]+$/)) instName = cells[6];
+
+        const examEl = row ? row.querySelector('[id*="examPeriod"]') : null;
         const rawHours = colHours !== -1 ? cells[colHours] : '';
         const parsedHours = parseInt(rawHours) || '';
 
@@ -66,10 +72,10 @@
           course_name: (colName !== -1 ? cells[colName] : cells[1]) || '',
           section_number: (colSec !== -1 ? cells[colSec] : cells[2]) || '',
           type: (colType !== -1 ? cells[colType] : cells[3]) || 'نظري',
-          credit_hours: (parsedHours >= 1 && parsedHours <= 6) ? parsedHours : '',
+          credit_hours: (parsedHours >= 1 && parsedHours <= 8) ? parsedHours : '',
           sub_sections_count: cells[4] || '',
           status: (colStatus !== -1 ? cells[colStatus] : cells[5]) || 'مفتوحة',
-          instructor: instructorEl ? instructorEl.innerText.trim() : (colInst !== -1 ? cells[colInst] : cells[6] || ''),
+          instructor: instName,
           exam_period: examEl ? examEl.innerText.trim() : (cells[7] || ''),
           slots: parseSectionTime(input.value)
         });
@@ -81,14 +87,18 @@
         if (cells.length >= 4) {
           const rawHours = colHours !== -1 ? cells[colHours] : '';
           const parsedHours = parseInt(rawHours) || '';
+          let instName = '';
+          if (colInst !== -1 && cells[colInst]) instName = cells[colInst];
+          else if (cells[6] && !cells[6].match(/^[0-9]+$/)) instName = cells[6];
+
           results.push({
             course_code: (colCode !== -1 ? cells[colCode] : cells[0]) || '',
             course_name: (colName !== -1 ? cells[colName] : cells[1]) || '',
             section_number: (colSec !== -1 ? cells[colSec] : cells[2]) || '',
             type: (colType !== -1 ? cells[colType] : cells[3]) || 'نظري',
-            credit_hours: (parsedHours >= 1 && parsedHours <= 6) ? parsedHours : '',
+            credit_hours: (parsedHours >= 1 && parsedHours <= 8) ? parsedHours : '',
             status: (colStatus !== -1 ? cells[colStatus] : cells[5]) || 'مفتوحة',
-            instructor: (colInst !== -1 ? cells[colInst] : cells[6]) || '',
+            instructor: instName,
             slots: []
           });
         }

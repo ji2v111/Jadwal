@@ -1189,15 +1189,19 @@
         // MRV Heuristic: Sort courses with fewest units first for instant branch pruning
         courseOptions.sort((a, b) => a.length - b.length);
 
-        // Fast DFS traversal of course units
+        // Dynamic capacity: If few combinations exist, collect up to 2,000 schedules per set; otherwise up to 200 per set
+        const MAX_PER_SET = validSets.length <= 5 ? 2000 : (validSets.length <= 50 ? 500 : 200);
+        const MAX_ITER_PER_SET = 50000;
+        const MAX_TOTAL_GLOBAL = 15000;
+
+        if (validSchedules.length >= MAX_TOTAL_GLOBAL) break;
+
         const currentStack = [];
         let foundInSet = 0;
         let iterInSet = 0;
-        const MAX_PER_SET = 25;
-        const MAX_ITER_PER_SET = 2000;
 
         function dfs(courseIdx) {
-          if (foundInSet >= MAX_PER_SET || iterInSet >= MAX_ITER_PER_SET) return;
+          if (foundInSet >= MAX_PER_SET || iterInSet >= MAX_ITER_PER_SET || validSchedules.length >= MAX_TOTAL_GLOBAL) return;
           if (courseIdx === courseOptions.length) {
             const flat = currentStack.flat();
             const evalRes = evaluateSchedule(flat);
@@ -1211,7 +1215,7 @@
           const units = courseOptions[courseIdx];
           for (const unit of units) {
             iterInSet++;
-            if (iterInSet >= MAX_ITER_PER_SET || foundInSet >= MAX_PER_SET) break;
+            if (iterInSet >= MAX_ITER_PER_SET || foundInSet >= MAX_PER_SET || validSchedules.length >= MAX_TOTAL_GLOBAL) break;
 
             let conflict = false;
             for (const placedUnit of currentStack) {
