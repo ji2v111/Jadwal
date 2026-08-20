@@ -1209,15 +1209,21 @@
 
       validSets.sort((a, b) => getCourseSetDayPotential(a.set) - getCourseSetDayPotential(b.set));
 
-      let generated = [];
-      const MAX_TOTAL_COLLECTED = 5000;
-      const MAX_PER_SET = 25;
+      const withDaysOff = [];
+      const withoutDaysOff = [];
 
       for (const item of validSets) {
-        if (generated.length >= MAX_TOTAL_COLLECTED) break;
-        const found = searchSchedulesForCourseSet(item.set, item.hours, allowClosed, MAX_PER_SET);
-        generated.push(...found);
+        const found = searchSchedulesForCourseSet(item.set, item.hours, allowClosed, 30);
+        for (const s of found) {
+          if (s.daysOffCount > 0) {
+            if (withDaysOff.length < 2500) withDaysOff.push(s);
+          } else {
+            if (withoutDaysOff.length < 500) withoutDaysOff.push(s);
+          }
+        }
       }
+
+      const generated = [...withDaysOff, ...withoutDaysOff];
 
       if (generated.length === 0) {
         showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets.map(v => v.set));
