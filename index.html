@@ -1022,69 +1022,6 @@
       return false;
     }
 
-    function searchSchedulesForCourseSet(courseSet, targetHours, allowClosed, maxPerSet = 100) {
-      const groups = [];
-      for (const code of courseSet) {
-        const c = normalizedCourses[code];
-        if (!c) return [];
-        let validTheory = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
-        let validPractical = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
-
-        if (validTheory.length === 0 && c.theory.length > 0) return [];
-        if (validPractical.length === 0 && c.practical.length > 0) return [];
-
-        if (validTheory.length > 0) groups.push(validTheory);
-        if (validPractical.length > 0) groups.push(validPractical);
-      }
-
-      if (groups.length === 0) return [];
-
-      // Sort groups with fewest sections first (MRV Heuristic for maximum pruning speed)
-      groups.sort((a, b) => a.length - b.length);
-
-      const foundSchedules = [];
-      const currentStack = [];
-      let iterations = 0;
-      const MAX_ITERATIONS = 40000;
-
-      function dfs(grpIdx) {
-        if (foundSchedules.length >= maxPerSet || iterations >= MAX_ITERATIONS) return;
-        if (grpIdx === groups.length) {
-          const evalRes = evaluateSchedule(currentStack);
-          foundSchedules.push({
-            courseSet,
-            ...evalRes,
-            totalHours: targetHours
-          });
-          return;
-        }
-
-        const grp = groups[grpIdx];
-        for (const sec of grp) {
-          iterations++;
-          if (iterations >= MAX_ITERATIONS) break;
-
-          // Prune early if current section conflicts with any already chosen section
-          let hasConflict = false;
-          for (const placed of currentStack) {
-            if (sectionsOverlap(placed, sec)) {
-              hasConflict = true;
-              break;
-            }
-          }
-
-          if (!hasConflict) {
-            currentStack.push(sec);
-            dfs(grpIdx + 1);
-            currentStack.pop();
-          }
-        }
-      }
-
-      dfs(0);
-      return foundSchedules;
-    }
-
     function evaluateSchedule(sections) {
       const allSlots = [];
       for (const sec of sections) allSlots.push(...sec.slots);
@@ -1193,39 +1130,81 @@
         }
       }
 
-      // Heuristic: Pre-sort combinations by lowest day footprint to prioritize max days off
-      function getCourseSetDayPotential(courseSet) {
-        const allDays = new Set();
-        for (const code of courseSet) {
-          const c = normalizedCourses[code];
-          if (!c) continue;
-          const valid = [...c.theory, ...c.practical].filter(s => allowClosed || s.status === 'مفتوحة');
-          for (const sec of valid) {
-            for (const sl of sec.slots) if (sl.day) allDays.add(sl.day);
-          }
-        }
-        return allDays.size;
-      }
-
-      validSets.sort((a, b) => getCourseSetDayPotential(a.set) - getCourseSetDayPotential(b.set));
-
-      const withDaysOff = [];
-      const withoutDaysOff = [];
+      const validSchedules = [];
 
       for (const item of validSets) {
-        const found = searchSchedulesForCourseSet(item.set, item.hours, allowClosed, 30);
-        for (const s of found) {
-          if (s.daysOffCount > 0) {
-            if (withDaysOff.length < 2500) withDaysOff.push(s);
-          } else {
-            if (withoutDaysOff.length < 500) withoutDaysOff.push(s);
+        const cSet = item.set;
+        const courseOptions = [];
+        let possible = true;
+
+        for (const code of cSet) {
+          const c = normalizedCourses[code];
+          if (!c) { possible = false; break; }
+          const th = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
+          const pr = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
+
+          let opts = [];
+          if (pr.length > 0 && th.length > 0) {
+            for (const t of th) {
+              for (const p of pr) {
+                if (!sectionsOverlap(t, p)) opts.push([t, p]);
+              }
+            }
+          } else if (th.length > 0 && pr.length === 0) {
+            for (const t of th) opts.push([t]);
+          } else if (pr.length > 0 && th.length === 0) {
+            for (const p of pr) opts.push([p]);
+          }
+
+          if (opts.length === 0) {
+            possible = false;
+            break;
+          }
+          courseOptions.push(opts);
+        }
+
+        if (!possible) continue;
+
+        // Fast DFS traversal of course units
+        const currentStack = [];
+        function dfs(courseIdx) {
+          if (courseIdx === courseOptions.length) {
+            const flat = currentStack.flat();
+            const evalRes = evaluateSchedule(flat);
+            evalRes.courseSet = cSet;
+            evalRes.totalHours = item.hours;
+            validSchedules.push(evalRes);
+            return;
+          }
+
+          const units = courseOptions[courseIdx];
+          for (const unit of units) {
+            let conflict = false;
+            for (const placedUnit of currentStack) {
+              for (const secP of placedUnit) {
+                for (const secU of unit) {
+                  if (sectionsOverlap(secP, secU)) {
+                    conflict = true;
+                    break;
+                  }
+                }
+                if (conflict) break;
+              }
+              if (conflict) break;
+            }
+
+            if (!conflict) {
+              currentStack.push(unit);
+              dfs(courseIdx + 1);
+              currentStack.pop();
+            }
           }
         }
+
+        dfs(0);
       }
 
-      const generated = [...withDaysOff, ...withoutDaysOff];
-
-      if (generated.length === 0) {
+      if (validSchedules.length === 0) {
         showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets.map(v => v.set));
         return;
       }
@@ -1234,7 +1213,7 @@
       const diagEl = document.getElementById('diagModal');
       if (diagEl) diagEl.classList.add('hidden');
 
-      currentSchedules = generated;
+      currentSchedules = validSchedules;
       sortAndRefreshSchedules();
     }
 
