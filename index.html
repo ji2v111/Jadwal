@@ -629,50 +629,7 @@
       { bg: "#f0f9ff", border: "#0ea5e9", text: "#075985", darkBg: "#082f49", darkBorder: "#0ea5e9", darkText: "#bae6fd" }
     ];
 
-    const DEFAULT_RAW_DATA = [
-      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"1311","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"عادل ابراهيم محمد رفاعي","slots":[{"day":"1","time":"01:00 م - 01:50 م","room":"203"}]},
-      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"2897","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"محمد سعيد علي آل عطيه الغامدي","slots":[{"day":"2","time":"03:00 م - 03:50 م","room":"310"}]},
-      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"2898","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"لم يحدد من الكلية","slots":[{"day":"1","time":"03:00 م - 03:50 م","room":"310"}]},
-      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"2899","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"احمد حمود حميد الرويثي","slots":[{"day":"1","time":"01:00 م - 01:50 م","room":"206"}]},
-      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"2997","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"محمد سعيد علي آل عطيه الغامدي","slots":[{"day":"4","time":"05:00 م - 05:50 م","room":"207"}]},
-      {"course_code":"عقد 3006","course_name":"العقيده","section_number":"1309","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"ابراهيم عبدالرحمن ابراهيم الشمسان","slots":[{"day":"3","time":"01:00 م - 01:50 م","room":"203"},{"day":"2","time":"02:00 م - 02:50 م","room":"204"},{"day":"2","time":"03:00 م - 03:50 م","room":"204"}]},
-      {"course_code":"عقد 3006","course_name":"العقيده","section_number":"2819","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"لم يحدد من الكلية","slots":[{"day":"1 3","time":"02:00 م - 03:20 م","room":"210"}]},
-      {"course_code":"عقد 3006","course_name":"العقيده","section_number":"2990","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"لم يحدد من الكلية","slots":[{"day":"1 3","time":"03:30 م - 04:50 م","room":"210"}]},
-      {"course_code":"عقد 3006","course_name":"العقيده","section_number":"2991","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"سامي عبدالرحمن حثلين الحيسوني الحربي","slots":[{"day":"2 4","time":"01:00 م - 02:20 م","room":"102"}]},
-      {"course_code":"عال 3452","course_name":"تعلم الآلة","section_number":"2455","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"2","time":"10:00 ص - 10:50 ص","room":"308"},{"day":"2","time":"11:00 ص - 11:50 ص","room":"308"}]},
-      {"course_code":"عال 3452","course_name":"تعلم الآلة","section_number":"2456","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"علي اسماعيل مصطفى دوملو","slots":[{"day":"4","time":"01:00 م - 01:50 م","room":"107"},{"day":"4","time":"02:00 م - 02:50 م","room":"107"}]},
-      {"course_code":"عال 3452","course_name":"تعلم الآلة","section_number":"2539","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"فيصل حامدي","slots":[{"day":"1","time":"02:00 م - 02:50 م","room":"207"},{"day":"1","time":"03:00 م - 03:50 م","room":"207"}]},
-      {"course_code":"عال 3452","course_name":"تعلم الآلة","section_number":"2538","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"علي اسماعيل مصطفى دوملو","slots":[{"day":"4","time":"03:00 م - 03:50 م","room":"108"},{"day":"4","time":"04:00 م - 04:50 م","room":"108"}]},
-      {"course_code":"عال 3483","course_name":"التطوير القائم على المنصات","section_number":"2533","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"ماجد امين بكر حريري","slots":[{"day":"3","time":"02:00 م - 03:20 م","room":"202"},{"day":"4","time":"02:00 م - 03:20 م","room":"204"}]},
-      {"course_code":"عال 3483","course_name":"التطوير القائم على المنصات","section_number":"2551","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"ماجد امين بكر حريري","slots":[{"day":"3 5","time":"08:00 ص - 09:20 ص","room":"104"}]},
-      {"course_code":"نما 3473","course_name":"تقنيات ريادة الأعمال","section_number":"2453","type":"نظري","sub_sections_count":"2","status":"مغلقة","instructor":"فهيد نداء بطاح العنزي","slots":[{"day":"1","time":"10:00 ص - 10:50 ص","room":"208"},{"day":"1","time":"11:00 ص - 11:50 ص","room":"208"}]},
-      {"course_code":"نما 3473","course_name":"تقنيات ريادة الأعمال","section_number":"2558","type":"نظري","sub_sections_count":"2","status":"مفتوحة","instructor":"فهيد نداء بطاح العنزي","slots":[{"day":"3","time":"11:00 ص - 11:50 ص","room":"207"},{"day":"3","time":"12:00 م - 12:50 م","room":"207"}]},
-      {"course_code":"نما 3540","course_name":"الأخلاقيات والابتكار المسؤول","section_number":"2541","type":"نظري","sub_sections_count":"2","status":"مغلقة","instructor":"بسام علي حسن الاحمدي","slots":[{"day":"5","time":"02:00 م - 02:50 م","room":"307"},{"day":"5","time":"03:00 م - 03:50 م","room":"307"}]},
-      {"course_code":"عال 3451","course_name":"الذكاء الاصطناعي","section_number":"2530","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"4","time":"11:00 ص - 11:50 ص","room":"307"},{"day":"4","time":"01:00 م - 01:50 م","room":"307"}]},
-      {"course_code":"عال 3451","course_name":"الذكاء الاصطناعي","section_number":"2529","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"1","time":"10:00 ص - 10:50 ص","room":"107"},{"day":"1","time":"11:00 ص - 11:50 ص","room":"107"}]},
-      {"course_code":"عال 3451","course_name":"الذكاء الاصطناعي","section_number":"2560","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"1","time":"08:00 ص - 08:50 ص","room":"308"},{"day":"1","time":"09:00 ص - 09:50 ص","room":"308"}]},
-      {"course_code":"عال 3451","course_name":"الذكاء الاصطناعي","section_number":"2559","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"3","time":"02:00 م - 02:50 م","room":"107"},{"day":"3","time":"03:00 م - 03:50 م","room":"107"}]},
-      {"course_code":"نما 3462","course_name":"إدارة مشاريع تقنية المعلومات","section_number":"2474","type":"نظري","sub_sections_count":"2","status":"مغلقة","instructor":"سهيل محمد محمدسعيد الحازمي","slots":[{"day":"4","time":"11:00 ص - 11:50 ص","room":"205"},{"day":"4","time":"12:00 م - 12:50 م","room":"205"}]},
-      {"course_code":"نما 3462","course_name":"إدارة مشاريع تقنية المعلومات","section_number":"2563","type":"نظري","sub_sections_count":"2","status":"مفتوحة","instructor":"سهيل محمد محمدسعيد الحازمي","slots":[{"day":"4","time":"02:00 م - 02:50 م","room":"206"},{"day":"4","time":"03:00 م - 03:50 م","room":"206"}]},
-      {"course_code":"تقا 3407","course_name":"تفاعل الإنسان والحاسب","section_number":"2457","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"محمد بن عيدة","slots":[{"day":"4","time":"08:00 ص - 09:20 ص","room":"201"},{"day":"3","time":"09:30 ص - 10:50 ص","room":"201"}]},
-      {"course_code":"تقا 3407","course_name":"تفاعل الإنسان والحاسب","section_number":"2458","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"محمد بن عيدة","slots":[{"day":"4","time":"09:30 ص - 10:50 ص","room":"201"},{"day":"2","time":"12:30 م - 01:50 م","room":"201"}]},
-      {"course_code":"تقا 3407","course_name":"تفاعل الإنسان والحاسب","section_number":"2459","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"عمر محمد عبدالمجيد نمنكاني","slots":[{"day":"3 4","time":"11:00 ص - 12:20 م","room":"201"}]},
-      {"course_code":"تقا 3407","course_name":"تفاعل الإنسان والحاسب","section_number":"2460","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"محمد بن عيدة","slots":[{"day":"3","time":"12:30 م - 01:50 م","room":"201"},{"day":"1","time":"01:00 م - 02:20 م","room":"201"}]},
-      {"course_code":"نما 3401","course_name":"التنقيب عن البيانات","section_number":"2543","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"عماد نبيل حسن حرب","slots":[{"day":"1","time":"10:00 ص - 10:50 ص","room":"204"},{"day":"1","time":"11:00 ص - 11:50 ص","room":"204"}]},
-      {"course_code":"نما 3401","course_name":"التنقيب عن البيانات","section_number":"2542","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"عماد نبيل حسن حرب","slots":[{"day":"5","time":"10:00 ص - 10:50 ص","room":"105"},{"day":"5","time":"11:00 ص - 11:50 ص","room":"105"}]},
-      {"course_code":"نما 3401","course_name":"التنقيب عن البيانات","section_number":"4340","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"عماد نبيل حسن حرب","slots":[{"day":"5","time":"08:00 ص - 08:50 ص","room":"205"},{"day":"5","time":"09:00 ص - 09:50 ص","room":"205"}]},
-      {"course_code":"تقا 3305","course_name":"تطوير تطبيقات الويب","section_number":"2469","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"عمر عبدالرحيم ظاهر نوح","slots":[{"day":"5","time":"10:00 ص - 10:50 ص","room":"208"},{"day":"5","time":"11:00 ص - 11:50 ص","room":"208"}]},
-      {"course_code":"تقا 3305","course_name":"تطوير تطبيقات الويب","section_number":"2468","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"عمر عبدالرحيم ظاهر نوح","slots":[{"day":"2","time":"01:00 م - 01:50 م","room":"206"},{"day":"2","time":"02:00 م - 02:50 م","room":"206"}]},
-      {"course_code":"تقا 3305","course_name":"تطوير تطبيقات الويب","section_number":"2562","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"عمر عبدالرحيم ظاهر نوح","slots":[{"day":"3","time":"09:00 ص - 09:50 ص","room":"308"},{"day":"3","time":"10:00 ص - 10:50 ص","room":"308"}]},
-      {"course_code":"تقا 3305","course_name":"تطوير تطبيقات الويب","section_number":"2561","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"عمر عبدالرحيم ظاهر نوح","slots":[{"day":"5","time":"08:00 ص - 08:50 ص","room":"108"},{"day":"5","time":"09:00 ص - 09:50 ص","room":"108"}]},
-      {"course_code":"نما 3404","course_name":"عرض وتصوير البيانات","section_number":"2557","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"عبدالله محمد علي السحيباني","slots":[{"day":"4","time":"08:00 ص - 08:50 ص","room":"104"},{"day":"3","time":"01:00 م - 01:50 م","room":"210"},{"day":"3","time":"02:00 م - 02:50 م","room":"210"}]},
-      {"course_code":"عال 3553","course_name":"التعلم العميق","section_number":"2540","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"عماد نبيل حسن حرب","slots":[{"day":"1 5","time":"12:00 م - 12:50 م","room":"107"},{"day":"1","time":"01:00 م - 01:50 م","room":"107"}]},
-      {"course_code":"تقا 3408","course_name":"الحوسبة السحابية","section_number":"2462","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"ياسر احمد صالح الضويان","slots":[{"day":"1","time":"10:00 ص - 10:50 ص","room":"207"},{"day":"1","time":"11:00 ص - 11:50 ص","room":"207"}]},
-      {"course_code":"تقا 3408","course_name":"الحوسبة السحابية","section_number":"2461","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"ياسر احمد صالح الضويان","slots":[{"day":"2","time":"11:00 ص - 11:50 ص","room":"107"},{"day":"2","time":"12:00 م - 12:50 م","room":"107"}]},
-      {"course_code":"تقا 3408","course_name":"الحوسبة السحابية","section_number":"2554","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"ياسر احمد صالح الضويان","slots":[{"day":"1","time":"08:00 ص - 08:50 ص","room":"207"},{"day":"1","time":"09:00 ص - 09:50 ص","room":"207"}]},
-      {"course_code":"تقا 3408","course_name":"الحوسبة السحابية","section_number":"2553","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"ياسر احمد صالح الضويان","slots":[{"day":"2","time":"08:00 ص - 08:50 ص","room":"108"},{"day":"2","time":"09:00 ص - 09:50 ص","room":"108"}]},
-      {"course_code":"نما 3303","course_name":"أمن البيانات وخصوصيتها","section_number":"2550","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"أسامه حامد بنر حومة","slots":[{"day":"1","time":"08:00 ص - 08:50 ص","room":"102"},{"day":"1","time":"09:00 ص - 09:50 ص","room":"102"},{"day":"5","time":"11:00 ص - 11:50 ص","room":"104"}]}
-    ];
+    const DEFAULT_RAW_DATA = [];
 
     let currentTheme = 'light';
     let currentLang = 'ar';
@@ -925,20 +882,24 @@
       container.innerHTML = '';
       const codes = Object.keys(normalizedCourses);
 
-      const defaultMand = ["تفاعل الانسان", "الذكاء الاصطناعي", "ادارة مشاريع", "قران", "تطوير تطبيقات الويب"];
-      const defaultExcl = ["التعلم العميق", "تعلم الالة", "تعلم الآلة", "العقيده", "العقيدة"];
+      if (codes.length === 0) {
+        container.innerHTML = `
+          <div class="py-8 px-4 text-center text-slate-400 dark:text-slate-500 space-y-2 bg-slate-50/50 dark:bg-slate-850/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+            <svg class="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            <p class="text-xs font-bold text-slate-700 dark:text-slate-300">${currentLang === 'en' ? 'No courses loaded yet' : 'لا توجد مقررات محملة بعد'}</p>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500">${currentLang === 'en' ? 'Use the Bookmarklet or upload JSON to start' : 'استخدم زر البوكمارك بالأعلى أو ارفع ملف JSON للبدء'}</p>
+          </div>
+        `;
+        return;
+      }
 
       for (const code of codes) {
         const c = normalizedCourses[code];
-        const cText = `${code} ${c.name}`.toLowerCase();
         
-        let state = 'optional';
+        let state = 'mandatory';
         const existingRadio = document.querySelector(`input[name="state_${code}"]:checked`);
         if (existingRadio) {
           state = existingRadio.value;
-        } else {
-          if (defaultMand.some(m => cText.includes(m))) state = 'mandatory';
-          else if (defaultExcl.some(e => cText.includes(e))) state = 'excluded';
         }
 
         const displayName = getTranslatedCourseName(c.name);
@@ -1064,6 +1025,12 @@
     }
 
     function generateTop50Schedules() {
+      if (Object.keys(normalizedCourses).length === 0) {
+        currentSchedules = [];
+        showSchedule(0);
+        return;
+      }
+
       const mandatoryCodes = [];
       const excludedCodes = [];
       const optionalCodes = [];
@@ -1097,62 +1064,56 @@
         }
       }
 
-      let validSchedules = [];
+      let generated = [];
 
-      for (const cSet of validSets) {
-        const courseOptions = [];
-        let possible = true;
+      for (const courseSet of validSets) {
+        const allSectionsList = [];
+        let hasEmptyGroup = false;
 
-        for (const code of cSet) {
+        for (const code of courseSet) {
           const c = normalizedCourses[code];
-          const th = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
-          const pr = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
+          let validTheory = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
+          let validPractical = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
 
-          let opts = [];
-          if (pr.length > 0) {
-            for (const t of th) {
-              for (const p of pr) {
-                if (!hasConflict([...t.slots, ...p.slots])) {
-                  opts.push([t, p]);
-                }
-              }
-            }
-          } else {
-            for (const t of th) opts.push([t]);
-          }
+          if (validTheory.length === 0 && c.theory.length > 0) { hasEmptyGroup = true; break; }
+          if (validPractical.length === 0 && c.practical.length > 0) { hasEmptyGroup = true; break; }
 
-          if (opts.length === 0) {
-            possible = false;
-            break;
-          }
-          courseOptions.push(opts);
+          if (validTheory.length > 0) allSectionsList.push(validTheory);
+          if (validPractical.length > 0) allSectionsList.push(validPractical);
         }
 
-        if (!possible) continue;
+        if (hasEmptyGroup) continue;
 
-        const allCombinations = getCartesianProduct(courseOptions);
-        for (const comb of allCombinations) {
+        const combinations = getCartesianProduct(allSectionsList);
+
+        for (const comb of combinations) {
           const flatSections = comb.flat();
           const allSlots = flatSections.flatMap(s => s.slots);
           if (!hasConflict(allSlots)) {
             const evalRes = evaluateSchedule(flatSections);
-            evalRes.courseSet = cSet;
-            evalRes.totalHours = cSet.reduce((s, c) => s + normalizedCourses[c].creditHours, 0);
-            validSchedules.push(evalRes);
+            generated.push({
+              courseSet,
+              ...evalRes,
+              totalHours: targetHours
+            });
           }
         }
       }
 
-      if (validSchedules.length > 0) {
-        currentSchedules = validSchedules;
-        sortAndRefreshSchedules();
-      } else {
-        showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets);
+      if (generated.length === 0) {
+        openDiagnosisModal();
+        return;
       }
+
+      currentSchedules = generated;
+      sortAndRefreshSchedules();
     }
 
     function sortAndRefreshSchedules() {
-      if (!currentSchedules || currentSchedules.length === 0) return;
+      if (!currentSchedules || currentSchedules.length === 0) {
+        showSchedule(0);
+        return;
+      }
 
       if (currentSortMode === 'days_off') {
         currentSchedules.sort((a, b) => b.daysOffCount !== a.daysOffCount ? b.daysOffCount - a.daysOffCount : a.totalGaps - b.totalGaps);
@@ -1169,7 +1130,29 @@
     }
 
     function showSchedule(idx) {
-      if (!currentSchedules || idx < 0 || idx >= currentSchedules.length) return;
+      if (!currentSchedules || currentSchedules.length === 0) {
+        document.getElementById('rankBadgeText').innerText = '—';
+        document.getElementById('daysOffBadge').innerText = currentLang === 'en' ? 'Days Off: —' : 'أيام الفراغ: —';
+        document.getElementById('gapSummaryText').innerText = currentLang === 'en' ? 'Waiting for courses data...' : 'في انتظار استيراد المقررات...';
+        document.getElementById('pageIndicator').innerText = '0 / 0';
+        document.getElementById('electivesBadge').innerText = currentLang === 'en' ? 'Added Electives: —' : 'المواد الإضافية: —';
+        document.getElementById('prevBtn').disabled = true;
+        document.getElementById('nextBtn').disabled = true;
+        renderProportionalCalendar({ sections: [], daysOff: [] });
+        const tbody = document.getElementById('sectionsTableBody');
+        if (tbody) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="7" class="py-8 text-center text-slate-400 dark:text-slate-500 font-medium text-xs">
+                ${currentLang === 'en' ? 'No registered sections yet. Use the Bookmarklet button above or upload a JSON file to start.' : 'لا توجد شعب مسجلة حالياً. استخدم زر البوكمارك بالأعلى أو ارفع ملف JSON للبدء.'}
+              </td>
+            </tr>
+          `;
+        }
+        return;
+      }
+
+      if (idx < 0 || idx >= currentSchedules.length) return;
       currentIndex = idx;
       const sched = currentSchedules[idx];
       const rank = idx + 1;
