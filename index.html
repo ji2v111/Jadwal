@@ -950,20 +950,80 @@
         }
       }
     }
-
-    function hasConflict(slots) {
-      const byDay = {};
-      for (const s of slots) {
-        if (!byDay[s.day]) byDay[s.day] = [];
-        byDay[s.day].push(s);
-      }
-      for (const day in byDay) {
-        const sorted = byDay[day].sort((a, b) => a.startMin - b.startMin);
-        for (let i = 0; i < sorted.length - 1; i++) {
-          if (sorted[i + 1].startMin < sorted[i].endMin) return true;
+    function sectionsOverlap(secA, secB) {
+      for (const sA of secA.slots) {
+        for (const sB of secB.slots) {
+          if (sA.day === sB.day) {
+            if (Math.max(sA.startMin, sB.startMin) < Math.min(sA.endMin, sB.endMin)) {
+              return true;
+            }
+          }
         }
       }
       return false;
+    }
+
+    function searchSchedulesForCourseSet(courseSet, targetHours, allowClosed, maxPerSet = 100) {
+      const groups = [];
+      for (const code of courseSet) {
+        const c = normalizedCourses[code];
+        if (!c) return [];
+        let validTheory = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
+        let validPractical = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
+
+        if (validTheory.length === 0 && c.theory.length > 0) return [];
+        if (validPractical.length === 0 && c.practical.length > 0) return [];
+
+        if (validTheory.length > 0) groups.push(validTheory);
+        if (validPractical.length > 0) groups.push(validPractical);
+      }
+
+      if (groups.length === 0) return [];
+
+      // Sort groups with fewest sections first (MRV Heuristic for maximum pruning speed)
+      groups.sort((a, b) => a.length - b.length);
+
+      const foundSchedules = [];
+      const currentStack = [];
+      let iterations = 0;
+      const MAX_ITERATIONS = 40000;
+
+      function dfs(grpIdx) {
+        if (foundSchedules.length >= maxPerSet || iterations >= MAX_ITERATIONS) return;
+        if (grpIdx === groups.length) {
+          const evalRes = evaluateSchedule(currentStack);
+          foundSchedules.push({
+            courseSet,
+            ...evalRes,
+            totalHours: targetHours
+          });
+          return;
+        }
+
+        const grp = groups[grpIdx];
+        for (const sec of grp) {
+          iterations++;
+          if (iterations >= MAX_ITERATIONS) break;
+
+          // Prune early if current section conflicts with any already chosen section
+          let hasConflict = false;
+          for (const placed of currentStack) {
+            if (sectionsOverlap(placed, sec)) {
+              hasConflict = true;
+              break;
+            }
+          }
+
+          if (!hasConflict) {
+            currentStack.push(sec);
+            dfs(grpIdx + 1);
+            currentStack.pop();
+          }
+        }
+      }
+
+      dfs(0);
+      return foundSchedules;
     }
 
     function evaluateSchedule(sections) {
@@ -1012,18 +1072,6 @@
       return result;
     }
 
-    function getCartesianProduct(arrays) {
-      return arrays.reduce((acc, curr) => {
-        let res = [];
-        for (let a of acc) {
-          for (let c of curr) {
-            res.push([...a, c]);
-          }
-        }
-        return res;
-      }, [[]]);
-    }
-
     function generateTop50Schedules() {
       if (Object.keys(normalizedCourses).length === 0) {
         currentSchedules = [];
@@ -1052,7 +1100,7 @@
       let validSets = [];
       if (remainingHours === 0) {
         validSets.push(mandatoryCodes);
-      } else {
+      } else if (remainingHours > 0) {
         for (let r = 1; r <= optionalCodes.length; r++) {
           const combs = getCombinations(optionalCodes, r);
           for (const comb of combs) {
@@ -1065,43 +1113,16 @@
       }
 
       let generated = [];
+      const MAX_TOTAL_COLLECTED = 500;
 
       for (const courseSet of validSets) {
-        const allSectionsList = [];
-        let hasEmptyGroup = false;
-
-        for (const code of courseSet) {
-          const c = normalizedCourses[code];
-          let validTheory = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
-          let validPractical = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
-
-          if (validTheory.length === 0 && c.theory.length > 0) { hasEmptyGroup = true; break; }
-          if (validPractical.length === 0 && c.practical.length > 0) { hasEmptyGroup = true; break; }
-
-          if (validTheory.length > 0) allSectionsList.push(validTheory);
-          if (validPractical.length > 0) allSectionsList.push(validPractical);
-        }
-
-        if (hasEmptyGroup) continue;
-
-        const combinations = getCartesianProduct(allSectionsList);
-
-        for (const comb of combinations) {
-          const flatSections = comb.flat();
-          const allSlots = flatSections.flatMap(s => s.slots);
-          if (!hasConflict(allSlots)) {
-            const evalRes = evaluateSchedule(flatSections);
-            generated.push({
-              courseSet,
-              ...evalRes,
-              totalHours: targetHours
-            });
-          }
-        }
+        if (generated.length >= MAX_TOTAL_COLLECTED) break;
+        const found = searchSchedulesForCourseSet(courseSet, targetHours, allowClosed, 80);
+        generated.push(...found);
       }
 
       if (generated.length === 0) {
-        openDiagnosisModal();
+        showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets);
         return;
       }
 
