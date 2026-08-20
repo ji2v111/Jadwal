@@ -174,7 +174,7 @@
               <span data-i18n="targetHoursLabel">الساعات المستهدفة:</span>
               <span id="hoursValueDisplay" class="text-sm font-extrabold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 px-2.5 py-0.5 rounded border border-blue-200 dark:border-blue-500/30 font-sans shadow-2xs">19</span>
             </div>
-            <input type="range" id="hoursSlider" min="9" max="24" value="19" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded appearance-none cursor-pointer accent-blue-600" oninput="updateHoursDisplay(this.value)">
+            <input type="range" id="hoursSlider" min="9" max="24" value="19" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded appearance-none cursor-pointer accent-blue-600" oninput="updateHoursDisplay(this.value)" onchange="generateTop50Schedules()">
             <div class="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 font-semibold font-sans px-0.5">
               <span>9</span>
               <span>15</span>
@@ -187,7 +187,7 @@
           <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-850 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors">
             <span data-i18n="allowClosedLabel">إتاحة الشعب المغلقة:</span>
             <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" id="allowClosedSwitch" checked class="sr-only peer">
+              <input type="checkbox" id="allowClosedSwitch" checked class="sr-only peer" onchange="generateTop50Schedules()">
               <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
           </div>
@@ -690,17 +690,31 @@
 
     function timeToMinutes(str) {
       if (!str) return 0;
-      str = str.trim();
-      const m12 = str.match(/(\d{1,2}):(\d{2})\s*(ص|م)/);
+      str = String(str).trim();
+      const m12 = str.match(/(\d{1,2}):(\d{2})\s*([صم]|AM|PM|am|pm)?/i);
       if (m12) {
-        let h = parseInt(m12[1]), m = parseInt(m12[2]), p = m12[3];
-        if (p === 'م' && h !== 12) h += 12;
-        if (p === 'ص' && h === 12) h = 0;
+        let h = parseInt(m12[1]), m = parseInt(m12[2]);
+        let p = (m12[3] || '').toUpperCase();
+        if ((p === 'م' || p === 'PM') && h !== 12) h += 12;
+        if ((p === 'ص' || p === 'AM') && h === 12) h = 0;
         return h * 60 + m;
       }
+      const m4 = str.match(/^(\d{2})(\d{2})$/);
+      if (m4) return parseInt(m4[1]) * 60 + parseInt(m4[2]);
       const m24 = str.match(/(\d{1,2}):(\d{2})/);
       if (m24) return parseInt(m24[1]) * 60 + parseInt(m24[2]);
       return 0;
+    }
+
+    function normalizeDayName(d) {
+      if (!d) return '';
+      const s = String(d).trim().replace(/[إأآ]/g, 'ا').replace(/ة/g, 'ه').toLowerCase();
+      if (s === '1' || s === 'احد' || s.includes('sun') || s === 'u' || s === 'ح') return 'الأحد';
+      if (s === '2' || s === 'اثنين' || s.includes('mon') || s === 'm' || s === 'ن') return 'الاثنين';
+      if (s === '3' || s === 'ثلاثاء' || s === 'ثلاثا' || s.includes('tue') || s === 't' || s === 'ث') return 'الثلاثاء';
+      if (s === '4' || s === 'اربعاء' || s === 'اربعا' || s.includes('wed') || s === 'w' || s === 'ر') return 'الأربعاء';
+      if (s === '5' || s === 'خميس' || s.includes('thu') || s === 'r' || s === 'خ') return 'الخميس';
+      return d;
     }
 
     function minutesToTime(mins, lang = currentLang) {
@@ -714,10 +728,10 @@
     }
 
     function parseSlots(rawSlots) {
-      const dayMap = { "1": "الأحد", "2": "الاثنين", "3": "الثلاثاء", "4": "الأربعاء", "5": "الخميس" };
       let clean = [];
+      if (!Array.isArray(rawSlots)) return clean;
       for (const slot of rawSlots) {
-        if (slot.note) continue;
+        if (slot.note && String(slot.note).includes('اتفاق')) continue;
         const dayStr = String(slot.day || '').trim();
         if (!dayStr) continue;
 
@@ -725,16 +739,18 @@
         if (slot.start && slot.end) {
           startM = timeToMinutes(slot.start);
           endM = timeToMinutes(slot.end);
-        } else if (slot.time && slot.time.includes('-')) {
-          const parts = slot.time.split('-');
+        } else if (slot.time && String(slot.time).includes('-')) {
+          const parts = String(slot.time).split('-');
           startM = timeToMinutes(parts[0]);
           endM = timeToMinutes(parts[1]);
         }
         if (!startM || !endM) continue;
 
-        for (const num of dayStr.split(/\s+/)) {
-          const dayName = dayMap[num] || num;
-          clean.push({ day: dayName, startMin: startM, endMin: endM, room: (slot.room || '').trim() });
+        for (const part of dayStr.split(/[\s,]+/)) {
+          const normDay = normalizeDayName(part);
+          if (normDay) {
+            clean.push({ day: normDay, startMin: startM, endMin: endM, room: (slot.room || '').trim() });
+          }
         }
       }
       return clean;
@@ -885,6 +901,7 @@
 
     function onCourseStateChange(code, newState) {
       updateCourseCardStyle(code, newState);
+      generateTop50Schedules();
     }
 
     function renderCoursesList() {
@@ -895,9 +912,9 @@
       if (codes.length === 0) {
         container.innerHTML = `
           <div class="py-8 px-4 text-center text-slate-400 dark:text-slate-500 space-y-2 bg-slate-50/50 dark:bg-slate-850/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-            <svg class="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            <svg class="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             <p class="text-xs font-bold text-slate-700 dark:text-slate-300">${currentLang === 'en' ? 'No courses loaded yet' : 'لا توجد مقررات محملة بعد'}</p>
-            <p class="text-[11px] text-slate-400 dark:text-slate-500">${currentLang === 'en' ? 'Use the Bookmarklet or upload JSON to start' : 'استخدم زر البوكمارك بالأعلى أو ارفع ملف JSON للبدء'}</p>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500">${currentLang === 'en' ? 'Use the Import Courses button above or upload JSON to start' : 'استخدم زر سحب المقررات بالأعلى أو ارفع ملف JSON للبدء'}</p>
           </div>
         `;
         return;
@@ -906,7 +923,7 @@
       for (const code of codes) {
         const c = normalizedCourses[code];
         
-        let state = 'mandatory';
+        let state = 'optional';
         const existingRadio = document.querySelector(`input[name="state_${code}"]:checked`);
         if (existingRadio) {
           state = existingRadio.value;
@@ -959,6 +976,7 @@
           updateCourseCardStyle(code, 'optional');
         }
       }
+      generateTop50Schedules();
     }
     function sectionsOverlap(secA, secB) {
       for (const sA of secA.slots) {
@@ -1229,41 +1247,48 @@
       const byDay = {};
       DAYS_MAP.ar.forEach(d => byDay[d] = []);
 
-      for (const sec of sched.sections) {
-        for (const slot of sec.slots) {
-          if (byDay[slot.day]) {
-            byDay[slot.day].push({
-              startMin: slot.startMin,
-              endMin: slot.endMin,
-              start: minutesToTime(slot.startMin),
-              end: minutesToTime(slot.endMin),
-              course: sec.courseName,
-              translatedCourse: getTranslatedCourseName(sec.courseName),
-              type: sec.type,
-              translatedType: getTranslatedType(sec.type),
-              crn: sec.sectionNumber,
-              instructor: sec.instructor,
-              translatedInstructor: getTranslatedInstructor(sec.instructor),
-              room: slot.room,
-              status: sec.status
-            });
+      if (sched && sched.sections) {
+        for (const sec of sched.sections) {
+          for (const slot of sec.slots) {
+            const dName = normalizeDayName(slot.day);
+            if (byDay[dName]) {
+              byDay[dName].push({
+                startMin: slot.startMin,
+                endMin: slot.endMin,
+                start: minutesToTime(slot.startMin),
+                end: minutesToTime(slot.endMin),
+                course: sec.courseName,
+                courseCode: sec.courseCode,
+                translatedCourse: getTranslatedCourseName(sec.courseName),
+                type: sec.type,
+                translatedType: getTranslatedType(sec.type),
+                crn: sec.sectionNumber,
+                instructor: sec.instructor,
+                translatedInstructor: getTranslatedInstructor(sec.instructor),
+                room: slot.room,
+                status: sec.status
+              });
+            }
           }
         }
       }
 
       let colorCounter = 0;
       courseColorMap = {};
-      sched.sections.forEach(sec => {
-        if (!courseColorMap[sec.courseCode]) {
-          courseColorMap[sec.courseCode] = COURSE_COLORS[colorCounter % COURSE_COLORS.length];
-          colorCounter++;
-        }
-      });
+      if (sched && sched.sections) {
+        sched.sections.forEach(sec => {
+          if (!courseColorMap[sec.courseCode]) {
+            courseColorMap[sec.courseCode] = COURSE_COLORS[colorCounter % COURSE_COLORS.length];
+            colorCounter++;
+          }
+        });
+      }
 
       DAYS_MAP.ar.forEach((dAr, dIdx) => {
         const col = document.getElementById(`dayColumn_${dIdx}`);
         const summary = document.getElementById(`daySummary_${dIdx}`);
         const header = document.getElementById(`dayHeader_${dIdx}`);
+        if (!col) return;
         col.innerHTML = '';
 
         for (let l = 0; l < 10; l++) {
@@ -1272,30 +1297,43 @@
           col.appendChild(line);
         }
 
-        const isOff = sched.daysOff.includes(dAr);
-        header.className = isOff 
-          ? 'text-center text-xs font-bold py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 mb-1.5' 
-          : 'text-center text-xs font-bold py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mb-1.5';
+        const isOff = sched && sched.daysOff ? sched.daysOff.includes(dAr) : false;
+        if (header) {
+          header.className = isOff 
+            ? 'text-center text-xs font-bold py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 mb-1.5' 
+            : 'text-center text-xs font-bold py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mb-1.5';
+        }
 
-        const slots = byDay[dAr].sort((a, b) => a.startMin - b.startMin);
+        const slots = (byDay[dAr] || []).sort((a, b) => a.startMin - b.startMin);
 
         if (slots.length === 0) {
-          const offBanner = document.createElement('div');
-          offBanner.className = 'absolute inset-0 flex items-center justify-center font-bold text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20 rounded-xl';
-          offBanner.innerText = TRANSLATIONS[currentLang].dayOffText;
-          col.appendChild(offBanner);
-          summary.innerText = TRANSLATIONS[currentLang].dayOffText;
-          summary.className = 'mt-1.5 text-[10px] text-center font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 py-1 rounded border border-emerald-200 dark:border-emerald-800';
+          if (sched && sched.sections && sched.sections.length > 0) {
+            const offBanner = document.createElement('div');
+            offBanner.className = 'absolute inset-0 flex items-center justify-center font-bold text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20 rounded-xl';
+            offBanner.innerText = TRANSLATIONS[currentLang].dayOffText;
+            col.appendChild(offBanner);
+            if (summary) {
+              summary.innerText = TRANSLATIONS[currentLang].dayOffText;
+              summary.className = 'mt-1.5 text-[10px] text-center font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 py-1 rounded border border-emerald-200 dark:border-emerald-800';
+            }
+          } else {
+            if (summary) {
+              summary.innerText = '—';
+              summary.className = 'mt-1.5 text-[10px] text-center font-semibold text-slate-400 dark:text-slate-500 py-1 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 font-sans';
+            }
+          }
         } else {
           const firstStart = minutesToTime(slots[0].startMin);
           const lastEnd = minutesToTime(slots[slots.length - 1].endMin);
-          summary.innerText = `${firstStart} → ${lastEnd}`;
-          summary.className = 'mt-1.5 text-[10px] text-center font-semibold text-slate-500 dark:text-slate-400 py-1 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 font-sans';
+          if (summary) {
+            summary.innerText = `${firstStart} → ${lastEnd}`;
+            summary.className = 'mt-1.5 text-[10px] text-center font-semibold text-slate-500 dark:text-slate-400 py-1 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 font-sans';
+          }
 
           slots.forEach(slot => {
-            const topPct = ((slot.startMin - DAY_START_MIN) / TOTAL_DAY_MINS) * 100;
-            const heightPct = Math.max(8, ((slot.endMin - slot.startMin) / TOTAL_DAY_MINS) * 100);
-            const color = courseColorMap[slot.crn] || COURSE_COLORS[dIdx % COURSE_COLORS.length];
+            const topPct = Math.max(0, Math.min(95, ((slot.startMin - DAY_START_MIN) / TOTAL_DAY_MINS) * 100));
+            const heightPct = Math.max(7, Math.min(100 - topPct, ((slot.endMin - slot.startMin) / TOTAL_DAY_MINS) * 100));
+            const color = courseColorMap[slot.courseCode] || COURSE_COLORS[dIdx % COURSE_COLORS.length];
 
             const card = document.createElement('div');
             card.className = `lecture-card absolute inset-x-1 border border-s-4 rounded-lg p-1.5 z-20 overflow-hidden cursor-pointer flex flex-col justify-between shadow-2xs`;
