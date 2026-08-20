@@ -758,43 +758,61 @@
 
     function normalizeDataset(items) {
       const courses = {};
+      if (!Array.isArray(items)) return courses;
+
       for (const item of items) {
-        if (item.sections && item.course_code) {
-          const code = item.course_code.trim();
+        if (item.sections && (item.course_code || item.courseCode || item.code)) {
+          const code = (item.course_code || item.courseCode || item.code).trim();
+          const name = (item.course_name || item.courseName || item.name || code).trim();
+          
+          let h = 3;
+          if (item.credit_hours) h = parseInt(item.credit_hours);
+          else if (item.hours) h = parseInt(item.hours);
+          else if (name.includes('القرآن') || code.includes('قرأ')) h = 1;
+          else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('إدارة مشاريع')) h = 2;
+
           if (!courses[code]) {
-            courses[code] = { code, name: item.course_name.trim(), creditHours: 3, theory: [], practical: [] };
+            courses[code] = { code, name, creditHours: h, theory: [], practical: [] };
           }
+
           for (const sec of item.sections) {
             const secObj = {
-              sectionNumber: sec.section_number.trim(),
+              sectionNumber: String(sec.section_number || sec.sectionNumber || sec.section || sec.crn || '').trim(),
               type: (sec.type || 'نظري').trim(),
               status: (sec.status || 'مفتوحة').trim(),
               instructor: (sec.instructor || '').trim(),
               slots: parseSlots(sec.slots || []),
               courseCode: code,
-              courseName: item.course_name.trim()
+              courseName: name
             };
-            if (secObj.type.includes('عملي')) courses[code].practical.push(secObj);
+            if (secObj.type.includes('عملي') || secObj.type.toLowerCase().includes('lab')) courses[code].practical.push(secObj);
             else courses[code].theory.push(secObj);
           }
-        } else if (item.course_code) {
-          const code = item.course_code.trim();
+        } else if (item.course_code || item.courseCode || item.code) {
+          const code = (item.course_code || item.courseCode || item.code).trim();
+          const name = (item.course_name || item.courseName || item.name || code).trim();
+
+          let h = 3;
+          if (item.credit_hours) h = parseInt(item.credit_hours);
+          else if (item.hours) h = parseInt(item.hours);
+          else if (name.includes('القرآن') || code.includes('قرأ')) h = 1;
+          else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('إدارة مشاريع')) h = 2;
+
           if (!courses[code]) {
-            let h = parseInt(item.sub_sections_count) || 3;
-            if (item.course_name.includes('القرآن') || code.includes('قرأ')) h = 1;
-            else if (item.course_name.includes('ريادة') || item.course_name.includes('الأخلاقيات') || item.course_name.includes('إدارة مشاريع')) h = 2;
-            courses[code] = { code, name: item.course_name.trim(), creditHours: h, theory: [], practical: [] };
+            courses[code] = { code, name, creditHours: h, theory: [], practical: [] };
           }
+
           const secObj = {
-            sectionNumber: item.section_number.trim(),
+            sectionNumber: String(item.section_number || item.sectionNumber || item.section || item.crn || '').trim(),
             type: (item.type || 'نظري').trim(),
             status: (item.status || 'مفتوحة').trim(),
             instructor: (item.instructor || '').trim(),
             slots: parseSlots(item.slots || []),
             courseCode: code,
-            courseName: item.course_name.trim()
+            courseName: name
           };
-          if (secObj.type.includes('عملي')) courses[code].practical.push(secObj);
+
+          if (secObj.type.includes('عملي') || secObj.type.toLowerCase().includes('lab')) courses[code].practical.push(secObj);
           else courses[code].theory.push(secObj);
         }
       }
@@ -1127,32 +1145,58 @@
 
       let validSets = [];
       if (remainingHours === 0) {
-        validSets.push(mandatoryCodes);
+        validSets.push({ set: mandatoryCodes, hours: mandHours });
       } else if (remainingHours > 0) {
         for (let r = 1; r <= optionalCodes.length; r++) {
           const combs = getCombinations(optionalCodes, r);
           for (const comb of combs) {
             const h = comb.reduce((s, c) => s + normalizedCourses[c].creditHours, 0);
             if (h === remainingHours) {
-              validSets.push([...mandatoryCodes, ...comb]);
+              validSets.push({ set: [...mandatoryCodes, ...comb], hours: mandHours + h });
             }
           }
+        }
+      }
+
+      // If no exact sum, adaptively find closest combinations
+      if (validSets.length === 0 && optionalCodes.length > 0) {
+        let bestDiff = 999;
+        let nearSets = [];
+        for (let r = 1; r <= optionalCodes.length; r++) {
+          const combs = getCombinations(optionalCodes, r);
+          for (const comb of combs) {
+            const h = comb.reduce((s, c) => s + normalizedCourses[c].creditHours, 0);
+            const diff = Math.abs(h - remainingHours);
+            if (diff < bestDiff && diff <= 3) {
+              bestDiff = diff;
+              nearSets = [{ set: [...mandatoryCodes, ...comb], hours: mandHours + h }];
+            } else if (diff === bestDiff && diff <= 3) {
+              nearSets.push({ set: [...mandatoryCodes, ...comb], hours: mandHours + h });
+            }
+          }
+        }
+        if (nearSets.length > 0) {
+          validSets = nearSets;
         }
       }
 
       let generated = [];
       const MAX_TOTAL_COLLECTED = 500;
 
-      for (const courseSet of validSets) {
+      for (const item of validSets) {
         if (generated.length >= MAX_TOTAL_COLLECTED) break;
-        const found = searchSchedulesForCourseSet(courseSet, targetHours, allowClosed, 80);
+        const found = searchSchedulesForCourseSet(item.set, item.hours, allowClosed, 80);
         generated.push(...found);
       }
 
       if (generated.length === 0) {
-        showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets);
+        showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets.map(v => v.set));
         return;
       }
+
+      // Close diagnosis modal if open
+      const diagEl = document.getElementById('diagModal');
+      if (diagEl) diagEl.classList.add('hidden');
 
       currentSchedules = generated;
       sortAndRefreshSchedules();
@@ -1726,7 +1770,7 @@
     function copyBookmarkletCode() {
       const code = getBookmarkletCode();
       navigator.clipboard.writeText(code).then(() => {
-        showToast(currentLang === 'en' ? 'Bookmarklet code copied!' : 'تم نسخ كود البوكمارك بنجاح!');
+        showToast(currentLang === 'en' ? 'Course importer code copied!' : 'تم نسخ كود سحب المقررات بنجاح!');
       });
     }
 
