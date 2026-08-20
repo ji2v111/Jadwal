@@ -12,7 +12,7 @@
   const JADWAL_APP_URL = "https://ji2v111.github.io/Jadwal/";
 
   // التحقق من وجود جدول المقررات في الصفحة
-  const hasTable = document.querySelector('[id*=":offeredCoursesTable"]') || document.querySelector('[id*="offeredCourses"]');
+  const hasTable = document.querySelector('[id*=":offeredCoursesTable"]') || document.querySelector('[id*="offeredCourses"]') || document.querySelector('table');
   if (!hasTable && !document.querySelector('.ui-datatable')) {
     alert("تنبيه: يرجى فتح صفحة 'المقررات المطروحة وفق الخطة' في بوابة الجامعة أولاً، ثم الضغط على هذا الزر.");
     return;
@@ -35,8 +35,21 @@
 
   function scrapeCurrentPage() {
     const results = [];
+    const table = document.querySelector('[id*=":offeredCoursesTable"]') || document.querySelector('table');
+    const headers = table ? Array.from(table.querySelectorAll('thead th, tr:first-child th, tr:first-child td')).map(th => th.innerText.trim().toLowerCase()) : [];
+    let colCode = -1, colName = -1, colSec = -1, colType = -1, colHours = -1, colStatus = -1, colInst = -1;
+
+    headers.forEach((h, i) => {
+      if (h.includes('رمز') || h.includes('كود') || h.includes('code')) colCode = i;
+      else if (h.includes('اسم') || h.includes('مقرر') || h.includes('title') || h.includes('name')) colName = i;
+      else if (h.includes('شعبة') || h.includes('رقم') || h.includes('sec') || h.includes('crn')) colSec = i;
+      else if (h.includes('نوع') || h.includes('نشاط') || h.includes('type')) colType = i;
+      else if (h.includes('ساعات') || h.includes('معتمدة') || h.includes('hour') || h.includes('cr')) colHours = i;
+      else if (h.includes('حالة') || h.includes('status')) colStatus = i;
+      else if (h.includes('محاضر') || h.includes('أستاذ') || h.includes('مدرس') || h.includes('instructor')) colInst = i;
+    });
+
     const sectionInputs = document.querySelectorAll('[id*=":offeredCoursesTable:"][id$=":section"]');
-    
     if (sectionInputs.length > 0) {
       sectionInputs.forEach(input => {
         const index = input.id.split(':')[2];
@@ -45,32 +58,37 @@
         const row = input.closest('tr');
         const cells = row ? Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim()) : [];
 
+        const rawHours = colHours !== -1 ? cells[colHours] : '';
+        const parsedHours = parseInt(rawHours) || '';
+
         results.push({
-          course_code: cells[0] || '',
-          course_name: cells[1] || '',
-          section_number: cells[2] || '',
-          type: cells[3] || 'نظري',
-          sub_sections_count: cells[4] || '1',
-          status: cells[5] || 'مفتوحة',
-          instructor: instructorEl ? instructorEl.innerText.trim() : (cells[6] || ''),
+          course_code: (colCode !== -1 ? cells[colCode] : cells[0]) || '',
+          course_name: (colName !== -1 ? cells[colName] : cells[1]) || '',
+          section_number: (colSec !== -1 ? cells[colSec] : cells[2]) || '',
+          type: (colType !== -1 ? cells[colType] : cells[3]) || 'نظري',
+          credit_hours: (parsedHours >= 1 && parsedHours <= 6) ? parsedHours : '',
+          sub_sections_count: cells[4] || '',
+          status: (colStatus !== -1 ? cells[colStatus] : cells[5]) || 'مفتوحة',
+          instructor: instructorEl ? instructorEl.innerText.trim() : (colInst !== -1 ? cells[colInst] : cells[6] || ''),
           exam_period: examEl ? examEl.innerText.trim() : (cells[7] || ''),
           slots: parseSectionTime(input.value)
         });
       });
     } else {
-      // بديل عام للجداول الأخرى
       const rows = document.querySelectorAll('table tbody tr');
       rows.forEach(row => {
         const cells = Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim());
-        if (cells.length >= 6) {
+        if (cells.length >= 4) {
+          const rawHours = colHours !== -1 ? cells[colHours] : '';
+          const parsedHours = parseInt(rawHours) || '';
           results.push({
-            course_code: cells[0] || '',
-            course_name: cells[1] || '',
-            section_number: cells[2] || '',
-            type: cells[3] || 'نظري',
-            sub_sections_count: '3',
-            status: cells[5] || 'مفتوحة',
-            instructor: cells[6] || '',
+            course_code: (colCode !== -1 ? cells[colCode] : cells[0]) || '',
+            course_name: (colName !== -1 ? cells[colName] : cells[1]) || '',
+            section_number: (colSec !== -1 ? cells[colSec] : cells[2]) || '',
+            type: (colType !== -1 ? cells[colType] : cells[3]) || 'نظري',
+            credit_hours: (parsedHours >= 1 && parsedHours <= 6) ? parsedHours : '',
+            status: (colStatus !== -1 ? cells[colStatus] : cells[5]) || 'مفتوحة',
+            instructor: (colInst !== -1 ? cells[colInst] : cells[6]) || '',
             slots: []
           });
         }
@@ -107,12 +125,12 @@
     }
   }
 
-  // إزالة التكرارات
-  const seen = new Set();
-  const uniqueSections = allSections.filter(s => {
-    const key = `${s.course_code}_${s.section_number}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
+  // فلترة الشعب المكررة
+  const seenKeys = new Set();
+  const uniqueSections = allSections.filter(sec => {
+    const key = `${sec.course_code}_${sec.section_number}`;
+    if (seenKeys.has(key)) return false;
+    seenKeys.add(key);
     return true;
   });
 
@@ -120,9 +138,7 @@
 
   setTimeout(() => {
     const payload = encodeURIComponent(JSON.stringify(uniqueSections));
-    // فتح الرابط مع البيانات المرفقة
     window.open(`${JADWAL_APP_URL}#data=${payload}`, '_blank');
     toast.remove();
   }, 800);
-
 })();

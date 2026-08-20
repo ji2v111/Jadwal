@@ -779,10 +779,11 @@
           const name = (item.course_name || item.courseName || item.name || code).trim();
           
           let h = 3;
-          if (item.credit_hours) h = parseInt(item.credit_hours);
-          else if (item.hours) h = parseInt(item.hours);
+          if (item.credit_hours && parseInt(item.credit_hours) >= 1 && parseInt(item.credit_hours) <= 6) h = parseInt(item.credit_hours);
+          else if (item.hours && parseInt(item.hours) >= 1 && parseInt(item.hours) <= 6) h = parseInt(item.hours);
+          else if (item.credits && parseInt(item.credits) >= 1 && parseInt(item.credits) <= 6) h = parseInt(item.credits);
           else if (name.includes('القرآن') || code.includes('قرأ')) h = 1;
-          else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('إدارة مشاريع')) h = 2;
+          else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('إدارة مشاريع') || name.includes('ثقافة') || name.includes('مهارات')) h = 2;
 
           if (!courses[code]) {
             courses[code] = { code, name, creditHours: h, theory: [], practical: [] };
@@ -806,10 +807,11 @@
           const name = (item.course_name || item.courseName || item.name || code).trim();
 
           let h = 3;
-          if (item.credit_hours) h = parseInt(item.credit_hours);
-          else if (item.hours) h = parseInt(item.hours);
+          if (item.credit_hours && parseInt(item.credit_hours) >= 1 && parseInt(item.credit_hours) <= 6) h = parseInt(item.credit_hours);
+          else if (item.hours && parseInt(item.hours) >= 1 && parseInt(item.hours) <= 6) h = parseInt(item.hours);
+          else if (item.credits && parseInt(item.credits) >= 1 && parseInt(item.credits) <= 6) h = parseInt(item.credits);
           else if (name.includes('القرآن') || code.includes('قرأ')) h = 1;
-          else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('إدارة مشاريع')) h = 2;
+          else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('إدارة مشاريع') || name.includes('ثقافة') || name.includes('مهارات')) h = 2;
 
           if (!courses[code]) {
             courses[code] = { code, name, creditHours: h, theory: [], practical: [] };
@@ -935,6 +937,13 @@
       generateTop50Schedules();
     }
 
+    function updateCourseCreditHours(code, newHours) {
+      if (normalizedCourses[code]) {
+        normalizedCourses[code].creditHours = newHours;
+        generateTop50Schedules();
+      }
+    }
+
     function renderCoursesList() {
       const container = document.getElementById('coursesListContainer');
       container.innerHTML = '';
@@ -965,8 +974,17 @@
         card.id = `course_card_${code}`;
         card.innerHTML = `
           <div class="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
-            <span class="truncate max-w-[210px]" title="${displayName}">${displayName}</span>
-            <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded font-mono font-bold">${c.creditHours} ${currentLang === 'ar' ? 'س' : 'CR'}</span>
+            <span class="truncate max-w-[190px]" title="${displayName}">${displayName}</span>
+            <div class="flex items-center gap-1">
+              <select onchange="updateCourseCreditHours('${code}', parseInt(this.value))" title="${currentLang === 'ar' ? 'تعديل ساعات المقرر' : 'Edit Credits'}" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5 focus:outline-none focus:border-blue-500 font-mono cursor-pointer transition">
+                <option value="1" ${c.creditHours === 1 ? 'selected' : ''}>1 ${currentLang === 'ar' ? 'س' : 'CR'}</option>
+                <option value="2" ${c.creditHours === 2 ? 'selected' : ''}>2 ${currentLang === 'ar' ? 'س' : 'CR'}</option>
+                <option value="3" ${c.creditHours === 3 ? 'selected' : ''}>3 ${currentLang === 'ar' ? 'س' : 'CR'}</option>
+                <option value="4" ${c.creditHours === 4 ? 'selected' : ''}>4 ${currentLang === 'ar' ? 'س' : 'CR'}</option>
+                <option value="5" ${c.creditHours === 5 ? 'selected' : ''}>5 ${currentLang === 'ar' ? 'س' : 'CR'}</option>
+                <option value="6" ${c.creditHours === 6 ? 'selected' : ''}>6 ${currentLang === 'ar' ? 'س' : 'CR'}</option>
+              </select>
+            </div>
           </div>
           <div class="grid grid-cols-3 gap-1 text-[10px] pt-1 border-t border-slate-100 dark:border-slate-800">
             <div>
@@ -1808,7 +1826,7 @@
 
     function getBookmarkletCode() {
       const appUrl = window.location.href.split('#')[0].split('?')[0];
-      return `javascript:(async function(){const JADWAL_URL="${appUrl}";const hasTable=document.querySelector('[id*=":offeredCoursesTable"]')||document.querySelector('[id*="offeredCourses"]');if(!hasTable&&!document.querySelector('.ui-datatable')){alert("يرجى فتح صفحة (المقررات المطروحة وفق الخطة) بالبوابة أولاً ثم الضغط على هذا الزر.");return;}const toast=document.createElement('div');toast.style.cssText="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#ffffff;padding:12px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:999999;font-family:sans-serif;font-size:13px;font-weight:bold;direction:rtl;border:1px solid #3b82f6;";toast.innerHTML="جاري استخراج المقررات والشعب تلقائياً... ⏳";document.body.appendChild(toast);function parseSectionTime(raw){if(!raw)return[{note:'بالإتفاق'}];return raw.split("@n").filter(Boolean).map(slot=>{const[dayTime,room]=slot.split("@r");const[day,time]=dayTime.split("@t");return{day:day?day.trim():'',time:time?time.trim():'',room:room?room.trim():''};});}function scrapeCurrentPage(){const results=[];const sectionInputs=document.querySelectorAll('[id*=":offeredCoursesTable:"][id$=":section"]');sectionInputs.forEach(input=>{const index=input.id.split(':')[2];const instructorEl=document.getElementById(\`myForm:offeredCoursesTable:\${index}:instructor\`);const examEl=document.getElementById(\`myForm:offeredCoursesTable:\${index}:examPeriod\`);const row=input.closest('tr');const cells=row?Array.from(row.querySelectorAll('td')).map(c=>c.innerText.trim()):[];results.push({course_code:cells[0]||'',course_name:cells[1]||'',section_number:cells[2]||'',type:cells[3]||'نظري',sub_sections_count:cells[4]||'1',status:cells[5]||'مفتوحة',instructor:instructorEl?instructorEl.innerText.trim():(cells[6]||''),exam_period:examEl?examEl.innerText.trim():(cells[7]||''),slots:parseSectionTime(input.value)});});return results;}function waitForTableReload(){return new Promise(resolve=>{const table=document.querySelector('[id*=":offeredCoursesTable"]')||document.body;const obs=new MutationObserver((mutations,observer)=>{observer.disconnect();setTimeout(resolve,600);});obs.observe(table,{childList:true,subtree:true});});}let all=[];const pages=Array.from(document.querySelectorAll('.ui-paginator-page'));if(pages.length===0){all=scrapeCurrentPage();}else{for(let i=0;i<pages.length;i++){toast.innerHTML=\`جاري قراءة الصفحة (\${i+1} من \${pages.length})... ⏳\`;const currentPages=Array.from(document.querySelectorAll('.ui-paginator-page'));if(currentPages[i]){currentPages[i].click();await waitForTableReload();all.push(...scrapeCurrentPage());}}}const seen=new Set();const unique=all.filter(s=>{const k=\`\${s.course_code}_\${s.section_number}\`;if(seen.has(k))return false;seen.add(k);return true;});toast.innerHTML=\`تم استخراج \${unique.length} شعبة بنجاح! جاري فتح الجدول... 🚀\`;setTimeout(()=>{const p=encodeURIComponent(JSON.stringify(unique));window.open(\`\${JADWAL_URL}#data=\${p}\`,'_blank');toast.remove();},700);})();`;
+      return `javascript:(async function(){const JADWAL_URL="${appUrl}";const hasTable=document.querySelector('[id*=":offeredCoursesTable"]')||document.querySelector('[id*="offeredCourses"]')||document.querySelector('table');if(!hasTable&&!document.querySelector('.ui-datatable')){alert("يرجى فتح صفحة (المقررات المطروحة وفق الخطة) بالبوابة أولاً ثم الضغط على هذا الزر.");return;}const toast=document.createElement('div');toast.style.cssText="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#ffffff;padding:12px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:999999;font-family:sans-serif;font-size:13px;font-weight:bold;direction:rtl;border:1px solid #3b82f6;";toast.innerHTML="جاري استخراج المقررات والشعب تلقائياً... ⏳";document.body.appendChild(toast);function parseSectionTime(raw){if(!raw)return[{note:'بالإتفاق'}];return raw.split("@n").filter(Boolean).map(slot=>{const[dayTime,room]=slot.split("@r");const[day,time]=dayTime.split("@t");return{day:day?day.trim():'',time:time?time.trim():'',room:room?room.trim():''};});}function scrapeCurrentPage(){const results=[];const table=document.querySelector('[id*=":offeredCoursesTable"]')||document.querySelector('table');const headers=table?Array.from(table.querySelectorAll('thead th, tr:first-child th, tr:first-child td')).map(th=>th.innerText.trim().toLowerCase()):[];let colCode=-1,colName=-1,colSec=-1,colType=-1,colHours=-1,colStatus=-1,colInst=-1;headers.forEach((h,i)=>{if(h.includes('رمز')||h.includes('كود')||h.includes('code'))colCode=i;else if(h.includes('اسم')||h.includes('مقرر')||h.includes('title')||h.includes('name'))colName=i;else if(h.includes('شعبة')||h.includes('رقم')||h.includes('sec')||h.includes('crn'))colSec=i;else if(h.includes('نوع')||h.includes('نشاط')||h.includes('type'))colType=i;else if(h.includes('ساعات')||h.includes('معتمدة')||h.includes('hour')||h.includes('cr'))colHours=i;else if(h.includes('حالة')||h.includes('status'))colStatus=i;else if(h.includes('محاضر')||h.includes('أستاذ')||h.includes('مدرس')||h.includes('instructor'))colInst=i;});const sectionInputs=document.querySelectorAll('[id*=":offeredCoursesTable:"][id$=":section"]');if(sectionInputs.length>0){sectionInputs.forEach(input=>{const index=input.id.split(':')[2];const instructorEl=document.getElementById(\`myForm:offeredCoursesTable:\${index}:instructor\`);const examEl=document.getElementById(\`myForm:offeredCoursesTable:\${index}:examPeriod\`);const row=input.closest('tr');const cells=row?Array.from(row.querySelectorAll('td')).map(c=>c.innerText.trim()):[];const rawHours=colHours!==-1?cells[colHours]:'';const parsedHours=parseInt(rawHours)||'';results.push({course_code:(colCode!==-1?cells[colCode]:cells[0])||'',course_name:(colName!==-1?cells[colName]:cells[1])||'',section_number:(colSec!==-1?cells[colSec]:cells[2])||'',type:(colType!==-1?cells[colType]:cells[3])||'نظري',credit_hours:(parsedHours>=1&&parsedHours<=6)?parsedHours:'',sub_sections_count:cells[4]||'',status:(colStatus!==-1?cells[colStatus]:cells[5])||'مفتوحة',instructor:instructorEl?instructorEl.innerText.trim():(colInst!==-1?cells[colInst]:cells[6]||''),exam_period:examEl?examEl.innerText.trim():(cells[7]||''),slots:parseSectionTime(input.value)});});}else{const rows=document.querySelectorAll('table tbody tr');rows.forEach(row=>{const cells=Array.from(row.querySelectorAll('td')).map(c=>c.innerText.trim());if(cells.length>=4){const rawHours=colHours!==-1?cells[colHours]:'';const parsedHours=parseInt(rawHours)||'';results.push({course_code:(colCode!==-1?cells[colCode]:cells[0])||'',course_name:(colName!==-1?cells[colName]:cells[1])||'',section_number:(colSec!==-1?cells[colSec]:cells[2])||'',type:(colType!==-1?cells[colType]:cells[3])||'نظري',credit_hours:(parsedHours>=1&&parsedHours<=6)?parsedHours:'',status:(colStatus!==-1?cells[colStatus]:cells[5])||'مفتوحة',instructor:(colInst!==-1?cells[colInst]:cells[6])||'',slots:[]});}});}return results;}function waitForTableReload(){return new Promise(resolve=>{const table=document.querySelector('[id*=":offeredCoursesTable"]')||document.body;const obs=new MutationObserver((mutations,observer)=>{observer.disconnect();setTimeout(resolve,600);});obs.observe(table,{childList:true,subtree:true});});}let all=[];const pages=Array.from(document.querySelectorAll('.ui-paginator-page'));if(pages.length===0){all=scrapeCurrentPage();}else{for(let i=0;i<pages.length;i++){toast.innerHTML=\`جاري قراءة الصفحة (\${i+1} من \${pages.length})... ⏳\`;const currentPages=Array.from(document.querySelectorAll('.ui-paginator-page'));if(currentPages[i]){currentPages[i].click();await waitForTableReload();all.push(...scrapeCurrentPage());}}}const seen=new Set();const unique=all.filter(s=>{const k=\`\${s.course_code}_\${s.section_number}\`;if(seen.has(k))return false;seen.add(k);return true;});toast.innerHTML=\`تم استخراج \${unique.length} شعبة بنجاح! جاري فتح الجدول... 🚀\`;setTimeout(()=>{const p=encodeURIComponent(JSON.stringify(unique));window.open(\`\${JADWAL_URL}#data=\${p}\`,'_blank');toast.remove();},700);})();`;
     }
 
     function openBookmarkletModal() {
