@@ -1165,20 +1165,33 @@
 
         if (!possible) continue;
 
+        // MRV Heuristic: Sort courses with fewest units first for instant branch pruning
+        courseOptions.sort((a, b) => a.length - b.length);
+
         // Fast DFS traversal of course units
         const currentStack = [];
+        let foundInSet = 0;
+        let iterInSet = 0;
+        const MAX_PER_SET = 25;
+        const MAX_ITER_PER_SET = 2000;
+
         function dfs(courseIdx) {
+          if (foundInSet >= MAX_PER_SET || iterInSet >= MAX_ITER_PER_SET) return;
           if (courseIdx === courseOptions.length) {
             const flat = currentStack.flat();
             const evalRes = evaluateSchedule(flat);
             evalRes.courseSet = cSet;
             evalRes.totalHours = item.hours;
             validSchedules.push(evalRes);
+            foundInSet++;
             return;
           }
 
           const units = courseOptions[courseIdx];
           for (const unit of units) {
+            iterInSet++;
+            if (iterInSet >= MAX_ITER_PER_SET || foundInSet >= MAX_PER_SET) break;
+
             let conflict = false;
             for (const placedUnit of currentStack) {
               for (const secP of placedUnit) {
