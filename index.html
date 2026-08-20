@@ -1193,12 +1193,29 @@
         }
       }
 
+      // Heuristic: Pre-sort combinations by lowest day footprint to prioritize max days off
+      function getCourseSetDayPotential(courseSet) {
+        const allDays = new Set();
+        for (const code of courseSet) {
+          const c = normalizedCourses[code];
+          if (!c) continue;
+          const valid = [...c.theory, ...c.practical].filter(s => allowClosed || s.status === 'مفتوحة');
+          for (const sec of valid) {
+            for (const sl of sec.slots) if (sl.day) allDays.add(sl.day);
+          }
+        }
+        return allDays.size;
+      }
+
+      validSets.sort((a, b) => getCourseSetDayPotential(a.set) - getCourseSetDayPotential(b.set));
+
       let generated = [];
-      const MAX_TOTAL_COLLECTED = 500;
+      const MAX_TOTAL_COLLECTED = 1000;
+      const MAX_PER_SET = 12;
 
       for (const item of validSets) {
         if (generated.length >= MAX_TOTAL_COLLECTED) break;
-        const found = searchSchedulesForCourseSet(item.set, item.hours, allowClosed, 80);
+        const found = searchSchedulesForCourseSet(item.set, item.hours, allowClosed, MAX_PER_SET);
         generated.push(...found);
       }
 
@@ -1222,13 +1239,29 @@
       }
 
       if (currentSortMode === 'days_off') {
-        currentSchedules.sort((a, b) => b.daysOffCount !== a.daysOffCount ? b.daysOffCount - a.daysOffCount : a.totalGaps - b.totalGaps);
+        currentSchedules.sort((a, b) => {
+          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
+          if (a.totalGaps !== b.totalGaps) return a.totalGaps - b.totalGaps;
+          return a.totalLateMinutes - b.totalLateMinutes;
+        });
       } else if (currentSortMode === 'min_gaps') {
-        currentSchedules.sort((a, b) => a.totalGaps !== b.totalGaps ? a.totalGaps - b.totalGaps : b.daysOffCount - a.daysOffCount);
+        currentSchedules.sort((a, b) => {
+          if (a.totalGaps !== b.totalGaps) return a.totalGaps - b.totalGaps;
+          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
+          return a.totalLateMinutes - b.totalLateMinutes;
+        });
       } else if (currentSortMode === 'early_exit') {
-        currentSchedules.sort((a, b) => a.totalLateMinutes - b.totalLateMinutes);
+        currentSchedules.sort((a, b) => {
+          if (a.totalLateMinutes !== b.totalLateMinutes) return a.totalLateMinutes - b.totalLateMinutes;
+          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
+          return a.totalGaps - b.totalGaps;
+        });
       } else if (currentSortMode === 'evening') {
-        currentSchedules.sort((a, b) => b.totalLateMinutes - a.totalLateMinutes);
+        currentSchedules.sort((a, b) => {
+          if (b.totalLateMinutes !== a.totalLateMinutes) return b.totalLateMinutes - a.totalLateMinutes;
+          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
+          return a.totalGaps - b.totalGaps;
+        });
       }
 
       currentIndex = 0;
