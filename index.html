@@ -1210,8 +1210,8 @@
       validSets.sort((a, b) => getCourseSetDayPotential(a.set) - getCourseSetDayPotential(b.set));
 
       let generated = [];
-      const MAX_TOTAL_COLLECTED = 1000;
-      const MAX_PER_SET = 12;
+      const MAX_TOTAL_COLLECTED = 5000;
+      const MAX_PER_SET = 25;
 
       for (const item of validSets) {
         if (generated.length >= MAX_TOTAL_COLLECTED) break;
