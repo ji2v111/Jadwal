@@ -1257,6 +1257,15 @@
       sortAndRefreshSchedules(isUserClick);
     }
 
+    function courseDistance(setA, setB) {
+      const union = new Set([...setA, ...setB]);
+      let intersection = 0;
+      for (const c of setA) {
+        if (setB.includes(c)) intersection++;
+      }
+      return 1 - (intersection / union.size);
+    }
+
     function sortAndRefreshSchedules(isUserClick = false) {
       if (!rawCombinationBuckets || rawCombinationBuckets.length === 0) {
         currentSchedules = [];
@@ -1273,34 +1282,66 @@
         }
       }
 
-      // 2. Sort the combination buckets themselves by their #1 top schedule score
-      rawCombinationBuckets.sort((a, b) => {
+      // 2. Extract best candidate from each combination bucket and rank by quality
+      const candidates = rawCombinationBuckets.map(b => b[0]);
+      candidates.sort((a, b) => {
         if (currentSortMode === 'days_off') {
-          return b[0].daysOffCount !== a[0].daysOffCount ? b[0].daysOffCount - a[0].daysOffCount : a[0].totalGaps - b[0].totalGaps;
+          return b.daysOffCount !== a.daysOffCount ? b.daysOffCount - a.daysOffCount : a.totalGaps - b.totalGaps;
         } else {
-          return a[0].totalGaps !== b[0].totalGaps ? a[0].totalGaps - b[0].totalGaps : b[0].daysOffCount - a[0].daysOffCount;
+          return a.totalGaps !== b.totalGaps ? a.totalGaps - b.totalGaps : b.daysOffCount - a.daysOffCount;
         }
       });
 
-      // 3. Stratified Round-Robin Interleaving for MAXIMUM course diversity across the 1000 schedules
-      const interleaved = [];
-      const maxLen = Math.max(...rawCombinationBuckets.map(b => b.length));
-      for (let round = 0; round < maxLen; round++) {
-        for (const bucket of rawCombinationBuckets) {
-          if (round < bucket.length) {
-            interleaved.push(bucket[round]);
-            if (interleaved.length >= 1000) break;
-          }
-        }
-        if (interleaved.length >= 1000) break;
+      // 3. MMR (Maximal Marginal Relevance) Re-ranking to maximize course diversity between consecutive schedules
+      const mmrSelected = [];
+      const remainingPool = [...candidates];
+      if (remainingPool.length > 0) {
+        mmrSelected.push(remainingPool.shift());
       }
 
-      currentSchedules = interleaved;
+      const targetTotal = Math.min(1000, candidates.length);
+      while (mmrSelected.length < targetTotal && remainingPool.length > 0) {
+        const windowSize = Math.min(40, remainingPool.length);
+        let bestIdx = 0;
+        let maxScore = -999999;
+
+        for (let i = 0; i < windowSize; i++) {
+          const cand = remainingPool[i];
+          let minDist = 1.0;
+          const checkCount = Math.min(6, mmrSelected.length);
+          for (let k = mmrSelected.length - checkCount; k < mmrSelected.length; k++) {
+            const dist = courseDistance(cand.courseSet, mmrSelected[k].courseSet);
+            if (dist < minDist) minDist = dist;
+          }
+
+          // Combined score: Quality + Diversity
+          const score = (minDist * 12) - (i * 0.15);
+          if (score > maxScore) {
+            maxScore = score;
+            bestIdx = i;
+          }
+        }
+
+        mmrSelected.push(remainingPool.splice(bestIdx, 1)[0]);
+      }
+
+      // Fill remainder with secondary section variations if pool was smaller than 1000
+      if (mmrSelected.length < 1000) {
+        for (const bucket of rawCombinationBuckets) {
+          for (let i = 1; i < bucket.length; i++) {
+            mmrSelected.push(bucket[i]);
+            if (mmrSelected.length >= 1000) break;
+          }
+          if (mmrSelected.length >= 1000) break;
+        }
+      }
+
+      currentSchedules = mmrSelected;
       currentIndex = 0;
       showSchedule(0);
 
       if (isUserClick) {
-        showToast(currentLang === 'en' ? `Generated ${currentSchedules.length} schedules!` : `تم تحديث وتوليد ${currentSchedules.length} جدولاً بنجاح! 🚀`);
+        showToast(currentLang === 'en' ? `Generated ${currentSchedules.length} diverse schedules!` : `تم توليد وتنسيق ${currentSchedules.length} جدولاً متنوعاً بنجاح! 🚀`);
       }
     }
 
