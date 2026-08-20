@@ -199,18 +199,12 @@
           <!-- Sorting Mode Tabs -->
           <div class="space-y-1.5">
             <label class="block text-xs font-bold text-slate-600 dark:text-slate-400" data-i18n="sortModeLabel">أولوية الترتيب:</label>
-            <div class="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
-              <button onclick="setSortMode('days_off')" id="sortBtn_days_off" class="sort-btn py-1.5 px-2 rounded-lg border border-blue-500 dark:border-blue-500/50 bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-blue-300 text-center transition shadow-2xs">
+            <div class="grid grid-cols-2 gap-2 text-xs font-bold">
+              <button onclick="setSortMode('days_off')" id="sortBtn_days_off" class="sort-btn py-2 px-3 rounded-xl border border-blue-500 dark:border-blue-500/50 bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-blue-300 text-center transition shadow-2xs">
                 <span data-i18n="sortDaysOff">أقصى أيام فراغ</span>
               </button>
-              <button onclick="setSortMode('min_gaps')" id="sortBtn_min_gaps" class="sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+              <button onclick="setSortMode('min_gaps')" id="sortBtn_min_gaps" class="sort-btn py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                 <span data-i18n="sortMinGaps">أقل فترات انتظار</span>
-              </button>
-              <button onclick="setSortMode('early_exit')" id="sortBtn_early_exit" class="sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                <span data-i18n="sortEarlyExit">انتهاء مبكر</span>
-              </button>
-              <button onclick="setSortMode('evening')" id="sortBtn_evening" class="sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
-                <span data-i18n="sortEvening">فترات مسائية</span>
               </button>
             </div>
           </div>
@@ -668,6 +662,7 @@
     let rawData = DEFAULT_RAW_DATA;
     let normalizedCourses = {};
     let currentSchedules = [];
+    let rawCombinationBuckets = [];
     let currentIndex = 0;
     let currentSortMode = 'days_off';
     let courseColorMap = {};
@@ -1197,33 +1192,28 @@
         // MRV Heuristic: Sort courses with fewest units first for instant branch pruning
         courseOptions.sort((a, b) => a.length - b.length);
 
-        // Dynamic capacity: If few combinations exist, collect up to 2,000 schedules per set; otherwise up to 200 per set
-        const MAX_PER_SET = validSets.length <= 5 ? 2000 : (validSets.length <= 50 ? 500 : 200);
-        const MAX_ITER_PER_SET = 50000;
-        const MAX_TOTAL_GLOBAL = 15000;
-
-        if (validSchedules.length >= MAX_TOTAL_GLOBAL) break;
+        const MAX_PER_SET = validSets.length <= 5 ? 2000 : (validSets.length <= 50 ? 500 : 100);
+        const MAX_ITER_PER_SET = 30000;
 
         const currentStack = [];
-        let foundInSet = 0;
+        const foundInSet = [];
         let iterInSet = 0;
 
         function dfs(courseIdx) {
-          if (foundInSet >= MAX_PER_SET || iterInSet >= MAX_ITER_PER_SET || validSchedules.length >= MAX_TOTAL_GLOBAL) return;
+          if (foundInSet.length >= MAX_PER_SET || iterInSet >= MAX_ITER_PER_SET) return;
           if (courseIdx === courseOptions.length) {
             const flat = currentStack.flat();
             const evalRes = evaluateSchedule(flat);
             evalRes.courseSet = cSet;
             evalRes.totalHours = item.hours;
-            validSchedules.push(evalRes);
-            foundInSet++;
+            foundInSet.push(evalRes);
             return;
           }
 
           const units = courseOptions[courseIdx];
           for (const unit of units) {
             iterInSet++;
-            if (iterInSet >= MAX_ITER_PER_SET || foundInSet >= MAX_PER_SET || validSchedules.length >= MAX_TOTAL_GLOBAL) break;
+            if (iterInSet >= MAX_ITER_PER_SET || foundInSet.length >= MAX_PER_SET) break;
 
             let conflict = false;
             for (const placedUnit of currentStack) {
@@ -1248,9 +1238,13 @@
         }
 
         dfs(0);
+
+        if (foundInSet.length > 0) {
+          rawCombinationBuckets.push(foundInSet);
+        }
       }
 
-      if (validSchedules.length === 0) {
+      if (rawCombinationBuckets.length === 0) {
         showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets.map(v => v.set));
         return;
       }
@@ -1259,42 +1253,48 @@
       const diagEl = document.getElementById('diagModal');
       if (diagEl) diagEl.classList.add('hidden');
 
-      currentSchedules = validSchedules;
       sortAndRefreshSchedules();
     }
 
     function sortAndRefreshSchedules() {
-      if (!currentSchedules || currentSchedules.length === 0) {
+      if (!rawCombinationBuckets || rawCombinationBuckets.length === 0) {
+        currentSchedules = [];
         showSchedule(0);
         return;
       }
 
-      if (currentSortMode === 'days_off') {
-        currentSchedules.sort((a, b) => {
-          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
-          if (a.totalGaps !== b.totalGaps) return a.totalGaps - b.totalGaps;
-          return a.totalLateMinutes - b.totalLateMinutes;
-        });
-      } else if (currentSortMode === 'min_gaps') {
-        currentSchedules.sort((a, b) => {
-          if (a.totalGaps !== b.totalGaps) return a.totalGaps - b.totalGaps;
-          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
-          return a.totalLateMinutes - b.totalLateMinutes;
-        });
-      } else if (currentSortMode === 'early_exit') {
-        currentSchedules.sort((a, b) => {
-          if (a.totalLateMinutes !== b.totalLateMinutes) return a.totalLateMinutes - b.totalLateMinutes;
-          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
-          return a.totalGaps - b.totalGaps;
-        });
-      } else if (currentSortMode === 'evening') {
-        currentSchedules.sort((a, b) => {
-          if (b.totalLateMinutes !== a.totalLateMinutes) return b.totalLateMinutes - a.totalLateMinutes;
-          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
-          return a.totalGaps - b.totalGaps;
-        });
+      // 1. Sort internal schedules inside each course combination bucket
+      for (const bucket of rawCombinationBuckets) {
+        if (currentSortMode === 'days_off') {
+          bucket.sort((a, b) => b.daysOffCount !== a.daysOffCount ? b.daysOffCount - a.daysOffCount : a.totalGaps - b.totalGaps);
+        } else {
+          bucket.sort((a, b) => a.totalGaps !== b.totalGaps ? a.totalGaps - b.totalGaps : b.daysOffCount - a.daysOffCount);
+        }
       }
 
+      // 2. Sort the combination buckets themselves by their #1 top schedule score
+      rawCombinationBuckets.sort((a, b) => {
+        if (currentSortMode === 'days_off') {
+          return b[0].daysOffCount !== a[0].daysOffCount ? b[0].daysOffCount - a[0].daysOffCount : a[0].totalGaps - b[0].totalGaps;
+        } else {
+          return a[0].totalGaps !== b[0].totalGaps ? a[0].totalGaps - b[0].totalGaps : b[0].daysOffCount - a[0].daysOffCount;
+        }
+      });
+
+      // 3. Stratified Round-Robin Interleaving for MAXIMUM course diversity across the 1000 schedules
+      const interleaved = [];
+      const maxLen = Math.max(...rawCombinationBuckets.map(b => b.length));
+      for (let round = 0; round < maxLen; round++) {
+        for (const bucket of rawCombinationBuckets) {
+          if (round < bucket.length) {
+            interleaved.push(bucket[round]);
+            if (interleaved.length >= 1000) break;
+          }
+        }
+        if (interleaved.length >= 1000) break;
+      }
+
+      currentSchedules = interleaved;
       currentIndex = 0;
       showSchedule(0);
     }
