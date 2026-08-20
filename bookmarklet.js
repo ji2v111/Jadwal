@@ -1,26 +1,20 @@
 // =========================================================================
-// JADWAL - أداة سحب المقررات التلقائية من بوابة الجامعة
-// =========================================================================
-// وظيفة السكريبت:
-// 1. يعمل كزر في شريط المفضلة بالمتصفح.
-// 2. عندما يضغط الطالب عليه داخل صفحة المقررات المطروحة، يسحب جميع الشعب آلياً.
-// 3. يقلب الصفحات عبر نظام البوابة تلقائياً.
-// 4. يفتح موقع الجداول مع البيانات المجهزة فوراً!
+// JADWAL - أداة سحب المقررات التلقائية الشاملة من بوابات الجامعات
 // =========================================================================
 
 (async function() {
   const JADWAL_APP_URL = "https://ji2v111.github.io/Jadwal/";
 
   // التحقق من وجود جدول المقررات في الصفحة
-  const hasTable = document.querySelector('[id*=":offeredCoursesTable"]') || document.querySelector('[id*="offeredCourses"]') || document.querySelector('table');
+  const hasTable = document.querySelector('[id*="offeredCoursesTable"]') || document.querySelector('[id*="offeredCourses"]') || document.querySelector('table');
   if (!hasTable && !document.querySelector('.ui-datatable')) {
     alert("تنبيه: يرجى فتح صفحة 'المقررات المطروحة وفق الخطة' في بوابة الجامعة أولاً، ثم الضغط على هذا الزر.");
     return;
   }
 
-  // إنشاء إشعار عائم لطيف يوضح تقدم العملية للطالب
+  // إنشاء إشعار عائم
   const toast = document.createElement('div');
-  toast.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#ffffff;padding:12px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.4);z-index:999999;font-family:sans-serif;font-size:14px;font-weight:bold;direction:rtl;border:1px solid #3b82f6;";
+  toast.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#ffffff;padding:12px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:999999;font-family:sans-serif;font-size:14px;font-weight:bold;direction:rtl;border:1px solid #3b82f6;";
   toast.innerHTML = "جاري استخراج المقررات والشُعب تلقائياً... يرجى الانتظار ⏳";
   document.body.appendChild(toast);
 
@@ -33,9 +27,58 @@
     });
   }
 
+  function extractInstructorFromRow(row, cells, colInst) {
+    if (!row && !cells) return '';
+    
+    // 1. Direct ID / Class match inside the row
+    if (row) {
+      const el = row.querySelector('[id*="instructor"], [id*="faculty"], [id*="teacher"], [id*="staff"], [id*="emp"], [class*="instructor"], [class*="faculty"], [class*="teacher"]');
+      if (el && el.innerText.trim()) return el.innerText.trim();
+    }
+
+    // 2. Column header match
+    if (colInst !== -1 && cells && cells[colInst] && cells[colInst].trim()) {
+      return cells[colInst].trim();
+    }
+
+    // 3. Scan all cells for title or name prefixes
+    if (row) {
+      const allElements = row.querySelectorAll('td, span, a, div');
+      for (const el of allElements) {
+        const title = el.getAttribute('title') || el.getAttribute('aria-label') || '';
+        if (title.includes('د.') || title.includes('أ.') || title.includes('دكتور') || title.includes('أستاذ')) {
+          return title.trim();
+        }
+      }
+    }
+
+    // 4. Scan cell text for Arabic names / prefixes
+    if (cells && cells.length > 0) {
+      const nonNameWords = ['نظري', 'عملي', 'مفتوحة', 'مغلقة', 'إناث', 'طلاب', 'طالبات', 'قاعة', 'معمل', 'مبنى', 'صباحي', 'مسائي', 'متاح', 'غير متاح', 'ساعات', 'ساعة', 'الفصل', 'المستوى'];
+      for (let i = 2; i < cells.length; i++) {
+        const text = cells[i].trim();
+        if (!text || text.match(/^[0-9:\-\s]+$/)) continue; // ignore numbers/times
+        if (text.includes('د.') || text.includes('أ.') || text.includes('دكتور') || text.includes('أستاذ') || text.includes('د/') || text.includes('أ/')) {
+          return text;
+        }
+        const words = text.split(/\s+/);
+        if (words.length >= 2 && words.length <= 5 && !nonNameWords.some(w => text.includes(w))) {
+          if (!text.match(/[0-9]/)) return text;
+        }
+      }
+    }
+
+    // 5. Fallback position (cell index 6)
+    if (cells && cells[6] && !cells[6].match(/^[0-9]+$/)) {
+      return cells[6].trim();
+    }
+
+    return '';
+  }
+
   function scrapeCurrentPage() {
     const results = [];
-    const table = document.querySelector('[id*=":offeredCoursesTable"]') || document.querySelector('table');
+    const table = document.querySelector('[id*="offeredCoursesTable"]') || document.querySelector('table');
     const headers = table ? Array.from(table.querySelectorAll('thead th, tr:first-child th, tr:first-child td')).map(th => th.innerText.trim().toLowerCase()) : [];
     let colCode = -1, colName = -1, colSec = -1, colType = -1, colHours = -1, colStatus = -1, colInst = -1;
 
@@ -46,23 +89,15 @@
       else if (h.includes('نوع') || h.includes('نشاط') || h.includes('type')) colType = i;
       else if (h.includes('ساعات') || h.includes('معتمدة') || h.includes('hour') || h.includes('cr')) colHours = i;
       else if (h.includes('حالة') || h.includes('status')) colStatus = i;
-      else if (h.includes('محاضر') || h.includes('استاذ') || h.includes('أستاذ') || h.includes('مدرس') || h.includes('تدريس') || h.includes('instructor') || h.includes('faculty') || h.includes('teacher')) colInst = i;
+      else if (h.includes('محاضر') || h.includes('استاذ') || h.includes('أستاذ') || h.includes('مدرس') || h.includes('تدريس') || h.includes('دكتور') || h.includes('instructor') || h.includes('faculty') || h.includes('teacher')) colInst = i;
     });
 
-    const sectionInputs = document.querySelectorAll('[id*=":offeredCoursesTable:"][id$=":section"]');
+    const sectionInputs = document.querySelectorAll('[id*="offeredCoursesTable:"][id$=":section"]');
     if (sectionInputs.length > 0) {
       sectionInputs.forEach(input => {
-        const index = input.id.split(':')[2];
         const row = input.closest('tr');
         const cells = row ? Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim()) : [];
-
-        // Comprehensive instructor detection:
-        const instEl = row ? (row.querySelector('[id*=":instructor"]') || row.querySelector('[id*="instructor"]') || row.querySelector('[id*="faculty"]') || row.querySelector('[id*="teacher"]') || row.querySelector('[id*="staff"]')) : null;
-        let instName = '';
-        if (instEl && instEl.innerText.trim()) instName = instEl.innerText.trim();
-        else if (colInst !== -1 && cells[colInst]) instName = cells[colInst];
-        else if (cells[6] && !cells[6].match(/^[0-9]+$/)) instName = cells[6];
-
+        const instName = extractInstructorFromRow(row, cells, colInst);
         const examEl = row ? row.querySelector('[id*="examPeriod"]') : null;
         const rawHours = colHours !== -1 ? cells[colHours] : '';
         const parsedHours = parseInt(rawHours) || '';
@@ -87,9 +122,7 @@
         if (cells.length >= 4) {
           const rawHours = colHours !== -1 ? cells[colHours] : '';
           const parsedHours = parseInt(rawHours) || '';
-          let instName = '';
-          if (colInst !== -1 && cells[colInst]) instName = cells[colInst];
-          else if (cells[6] && !cells[6].match(/^[0-9]+$/)) instName = cells[6];
+          const instName = extractInstructorFromRow(row, cells, colInst);
 
           results.push({
             course_code: (colCode !== -1 ? cells[colCode] : cells[0]) || '',
@@ -109,7 +142,7 @@
 
   function waitForTableReload() {
     return new Promise(resolve => {
-      const table = document.querySelector('[id*=":offeredCoursesTable"]') || document.body;
+      const table = document.querySelector('[id*="offeredCoursesTable"]') || document.body;
       const observer = new MutationObserver((mutations, obs) => {
         obs.disconnect();
         setTimeout(resolve, 600);
