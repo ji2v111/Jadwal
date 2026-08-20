@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jadwal | منظم ومحسن الجداول الجامعية</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & Cairo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- html2canvas for PNG Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            cairo: ['Cairo', 'sans-serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          },
+          colors: {
+            slate: {
+              950: '#080c14',
+              900: '#0f172a',
+              850: '#141e33',
+              800: '#1e293b',
+              700: '#334155',
+              600: '#475569',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+    }
+    body.lang-en {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    /* Minimal Custom Scrollbar */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Time Grid: 1 hour = exactly 60px (1 min = 1 px) */
+    .grid-hour-slot {
+      height: 60px;
+      border-bottom: 1px dashed rgba(226, 232, 240, 0.9);
+    }
+    .dark .grid-hour-slot {
+      border-bottom: 1px dashed rgba(51, 65, 85, 0.7);
+    }
+    .grid-hour-slot:last-child {
+      border-bottom: none;
+    }
+
+    /* Lecture Block Card */
+    .lecture-card {
+      transition: transform 0.14s ease, box-shadow 0.14s ease;
+    }
+    .lecture-card:hover {
+      transform: translateY(-2px);
+      z-index: 35;
+      box-shadow: 0 10px 22px -4px rgba(0, 0, 0, 0.15);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-blue-600 selection:text-white transition-colors duration-150">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-xs transition-colors duration-150">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+      
+      <!-- Brand Logo Mark -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm">
+          <!-- Minimalist Vector Schedule Logo -->
+          <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3" ry="3"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-base font-extrabold tracking-tight text-slate-900 dark:text-white font-sans">JADWAL</span>
+            <span class="text-[10px] bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 font-bold px-2 py-0.5 rounded border border-blue-200 dark:border-blue-500/20 font-sans">OPTIMIZER</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium" data-i18n="appSubtitle">منصة تحسين وتوليد الجداول الجامعية</p>
+        </div>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="flex items-center gap-2">
+        
+        <!-- Bookmarklet Tool Button -->
+        <button onclick="openBookmarkletModal()" class="bg-blue-50 dark:bg-blue-500/15 hover:bg-blue-100 dark:hover:bg-blue-500/25 text-blue-700 dark:text-blue-400 text-xs font-bold py-1.5 px-3 rounded-lg border border-blue-200 dark:border-blue-500/30 transition flex items-center gap-1.5 shadow-2xs">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          <span data-i18n="bookmarkletBtn">زر سحب المقررات (البوكمارك)</span>
+        </button>
+
+        <!-- Theme Toggle (Light / Dark) -->
+        <button onclick="toggleTheme()" id="themeToggleBtn" title="تبديل المظهر" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold p-2 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center justify-center shadow-2xs">
+          <!-- Sun Icon (shown in dark mode) -->
+          <svg id="themeIconSun" class="w-4 h-4 text-amber-400 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <!-- Moon Icon (shown in light mode) -->
+          <svg id="themeIconMoon" class="w-4 h-4 text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+        <!-- Upload JSON -->
+        <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-2xs">
+          <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+          <span data-i18n="uploadJsonBtn">رفع ملف JSON</span>
+          <input type="file" id="fileInput" accept=".json" class="hidden" onchange="handleFileUpload(event)">
+        </label>
+
+        <!-- Language Switcher -->
+        <button onclick="toggleLanguage()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-2 shadow-2xs">
+          <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+          <span id="langBtnText">English</span>
+        </button>
+      </div>
+
+
+    </div>
+  </header>
+
+  <!-- ==================== MAIN WORKSPACE ==================== -->
+  <main class="max-w-[1440px] mx-auto px-4 sm:px-6 py-5 w-full flex-1 space-y-5">
+
+    <!-- ==================== TOP ROW: SIDEBAR & CALENDAR ==================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+      <!-- ==================== CONTROL PANEL (4 cols) ==================== -->
+      <aside class="lg:col-span-4">
+        
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-sm space-y-3.5 transition-colors duration-150">
+          
+          <!-- Target Hours Slider -->
+          <div class="space-y-2 bg-slate-50 dark:bg-slate-850 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 transition-colors">
+            <div class="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+              <span data-i18n="targetHoursLabel">الساعات المستهدفة:</span>
+              <span id="hoursValueDisplay" class="text-sm font-extrabold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 px-2.5 py-0.5 rounded border border-blue-200 dark:border-blue-500/30 font-sans shadow-2xs">19</span>
+            </div>
+            <input type="range" id="hoursSlider" min="9" max="24" value="19" class="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded appearance-none cursor-pointer accent-blue-600" oninput="updateHoursDisplay(this.value)">
+            <div class="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 font-semibold font-sans px-0.5">
+              <span>9</span>
+              <span>15</span>
+              <span>19</span>
+              <span>24</span>
+            </div>
+          </div>
+
+          <!-- Closed Sections Toggle -->
+          <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-850 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors">
+            <span data-i18n="allowClosedLabel">إتاحة الشعب المغلقة:</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="allowClosedSwitch" checked class="sr-only peer">
+              <div class="w-9 h-5 bg-slate-300 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+          </div>
+
+          <!-- Sorting Mode Tabs -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400" data-i18n="sortModeLabel">أولوية الترتيب:</label>
+            <div class="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
+              <button onclick="setSortMode('days_off')" id="sortBtn_days_off" class="sort-btn py-1.5 px-2 rounded-lg border border-blue-500 dark:border-blue-500/50 bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-blue-300 text-center transition shadow-2xs">
+                <span data-i18n="sortDaysOff">أقصى أيام فراغ</span>
+              </button>
+              <button onclick="setSortMode('min_gaps')" id="sortBtn_min_gaps" class="sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span data-i18n="sortMinGaps">أقل فترات انتظار</span>
+              </button>
+              <button onclick="setSortMode('early_exit')" id="sortBtn_early_exit" class="sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span data-i18n="sortEarlyExit">انتهاء مبكر</span>
+              </button>
+              <button onclick="setSortMode('evening')" id="sortBtn_evening" class="sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span data-i18n="sortEvening">فترات مسائية</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Courses List (Tuned max-height so total sidebar height matches original calendar height) -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold text-slate-600 dark:text-slate-400" data-i18n="coursesListLabel">المقررات المتاحة:</label>
+              <button onclick="resetAllCourseStates()" class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline font-semibold" data-i18n="resetCoursesBtn">إعادة تعيين</button>
+            </div>
+
+            <!-- Search Filter -->
+            <div class="relative">
+              <input type="text" id="courseSearchInput" placeholder="تصفية المقررات..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition" oninput="filterCoursesList(this.value)">
+            </div>
+
+            <!-- Courses Container -->
+            <div id="coursesListContainer" class="space-y-2 max-h-[385px] overflow-y-auto pr-1"></div>
+          </div>
+
+          <!-- Generate Button -->
+          <button onclick="generateTop50Schedules()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs shadow-md shadow-blue-500/20">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            <span data-i18n="generateBtn">تحديث الجداول المقترحة</span>
+          </button>
+
+        </div>
+
+      </aside>
+
+      <!-- ==================== RESULTS WORKSPACE & CALENDAR (8 cols) ==================== -->
+      <section class="lg:col-span-8 space-y-3">
+
+        
+        <!-- Schedule Navigation & Metrics -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl flex flex-wrap items-center justify-between gap-3 shadow-sm transition-colors duration-150">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400 flex items-center justify-center font-extrabold text-xs font-sans">
+              <span id="rankBadgeText">#1</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span id="daysOffBadge" class="text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/30 px-2.5 py-0.5 rounded-lg">
+                  أيام الفراغ: الاثنين
+                </span>
+                <span class="text-slate-300 dark:text-slate-700">•</span>
+                <span id="gapSummaryText" class="text-xs text-slate-500 dark:text-slate-400 font-medium">فترات الانتظار: 6.1 ساعة • 19 ساعة</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800 text-xs">
+            <button onclick="prevSchedule()" id="prevBtn" class="bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded transition border border-slate-200 dark:border-slate-800 disabled:opacity-30 disabled:pointer-events-none shadow-2xs">
+              &larr;
+            </button>
+            <span id="pageIndicator" class="text-xs font-bold text-slate-700 dark:text-slate-300 px-2 min-w-[50px] text-center font-sans">1 / 50</span>
+            <button onclick="nextSchedule()" id="nextBtn" class="bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded transition border border-slate-200 dark:border-slate-800 disabled:opacity-30 disabled:pointer-events-none shadow-2xs">
+              &rarr;
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-2 bg-white dark:bg-slate-900 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-medium shadow-sm transition-colors duration-150">
+          <div class="text-[11px] text-slate-400 dark:text-slate-500" data-i18n="shortcutHint">
+            التنقل السريع عبر مفاتيح الأسهم ( ← و → )
+          </div>
+
+          <div class="flex items-center gap-2">
+            <!-- Copy CRNs + Course Names -->
+            <button onclick="copyCurrentCRNs()" id="copyCRNBtn" class="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-2xs">
+              <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span data-i18n="copyCRNsBtn">نسخ الشعب والمقررات</span>
+            </button>
+
+            <!-- Export 16-Week Calendar (.ics) -->
+            <button onclick="exportAsICS()" class="bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-2xs">
+              <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span data-i18n="exportICSBtn">تصدير للتقويم (16 أسبوع)</span>
+            </button>
+
+            <!-- Export PNG -->
+            <button onclick="exportAsPNG()" class="bg-blue-600 hover:bg-blue-700 text-white py-1.5 px-3 rounded-lg transition flex items-center gap-1.5 font-bold shadow-sm shadow-blue-500/20">
+              <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <span data-i18n="exportPNGBtn">حفظ كصورة</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ==================== CALENDAR GRID ==================== -->
+        <div id="calendarSection" class="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3 transition-colors duration-150 flex-1 flex flex-col justify-between">
+          
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+            <h3 class="font-bold text-xs text-slate-800 dark:text-slate-200" data-i18n="calendarHeading">التقويم الأسبوعي (08:00 ص - 06:00 م)</h3>
+            <span id="electivesBadge" class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">المواد الإضافية: —</span>
+          </div>
+
+          <div class="flex w-full overflow-x-auto select-none flex-1">
+            
+            <!-- Time Axis -->
+            <div class="w-14 shrink-0 flex flex-col justify-between pt-7 pb-11 text-[10px] font-bold text-slate-400 dark:text-slate-500 text-center font-sans" style="height: 660px;">
+              <div>08:00</div>
+              <div>09:00</div>
+              <div>10:00</div>
+              <div>11:00</div>
+              <div>12:00</div>
+              <div>01:00</div>
+              <div>02:00</div>
+              <div>03:00</div>
+              <div>04:00</div>
+              <div>05:00</div>
+              <div>06:00</div>
+            </div>
+
+            <!-- 5 Day Columns -->
+            <div class="grid grid-cols-5 gap-2.5 flex-1 min-w-[620px]">
+              
+              <!-- Sun to Thu -->
+              <div class="flex flex-col">
+                <div id="dayHeader_0" class="text-center text-xs font-bold py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mb-1.5">الأحد</div>
+                <div id="dayColumn_0" class="relative w-full rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden" style="height: 600px;"></div>
+                <div id="daySummary_0" class="mt-1.5 text-[10px] text-center font-semibold text-slate-400 dark:text-slate-500 py-1 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">-</div>
+              </div>
+
+              <div class="flex flex-col">
+                <div id="dayHeader_1" class="text-center text-xs font-bold py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mb-1.5">الاثنين</div>
+                <div id="dayColumn_1" class="relative w-full rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden" style="height: 600px;"></div>
+                <div id="daySummary_1" class="mt-1.5 text-[10px] text-center font-semibold text-slate-400 dark:text-slate-500 py-1 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">-</div>
+              </div>
+
+              <div class="flex flex-col">
+                <div id="dayHeader_2" class="text-center text-xs font-bold py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mb-1.5">الثلاثاء</div>
+                <div id="dayColumn_2" class="relative w-full rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden" style="height: 600px;"></div>
+                <div id="daySummary_2" class="mt-1.5 text-[10px] text-center font-semibold text-slate-400 dark:text-slate-500 py-1 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">-</div>
+              </div>
+
+              <div class="flex flex-col">
+                <div id="dayHeader_3" class="text-center text-xs font-bold py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mb-1.5">الأربعاء</div>
+                <div id="dayColumn_3" class="relative w-full rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden" style="height: 600px;"></div>
+                <div id="daySummary_3" class="mt-1.5 text-[10px] text-center font-semibold text-slate-400 dark:text-slate-500 py-1 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">-</div>
+              </div>
+
+              <div class="flex flex-col">
+                <div id="dayHeader_4" class="text-center text-xs font-bold py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mb-1.5">الخميس</div>
+                <div id="dayColumn_4" class="relative w-full rounded-xl bg-slate-50/70 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 overflow-hidden" style="height: 600px;"></div>
+                <div id="daySummary_4" class="mt-1.5 text-[10px] text-center font-semibold text-slate-400 dark:text-slate-500 py-1 bg-slate-50 dark:bg-slate-950 rounded border border-slate-100 dark:border-slate-800">-</div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- ==================== BOTTOM ROW: FULL WIDTH SECTIONS & CRNS TABLE ==================== -->
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl space-y-3.5 shadow-sm transition-colors duration-150 w-full">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-xs sm:text-sm text-slate-800 dark:text-white" data-i18n="sectionsTableHeading">الشعب والمقررات المسجلة في هذا الجدول</h3>
+          <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5" data-i18n="clickCrnToCopy">انقر على أي صف لنسخ رقم الشعبة واسم المقرر تلقائياً</p>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800 font-bold">
+            <tr>
+              <th class="py-3 px-3.5 font-bold font-mono">CRN</th>
+              <th class="py-3 px-3.5 font-bold" data-i18n="thCourse">المقرر</th>
+              <th class="py-3 px-3.5 font-bold" data-i18n="thType">النوع</th>
+              <th class="py-3 px-3.5 font-bold" data-i18n="thInstructor">المحاضر</th>
+              <th class="py-3 px-3.5 font-bold" data-i18n="thStatus">الحالة</th>
+              <th class="py-3 px-3.5 font-bold" data-i18n="thTimes">المواعيد</th>
+              <th class="py-3 px-3.5 font-bold" data-i18n="thRoom">القاعة</th>
+            </tr>
+          </thead>
+          <tbody id="sectionsTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-700 dark:text-slate-200"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+
+  <!-- ==================== TOAST ==================== -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-800 text-white font-bold px-4 py-2.5 rounded-xl shadow-2xl z-50 text-xs opacity-0 pointer-events-none transition-all duration-200 border border-slate-700">
+    <span id="toastMsg">تم النسخ بنجاح</span>
+  </div>
+
+  <!-- ==================== DIAGNOSIS MODAL ==================== -->
+  <div id="diagModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden"></div>
+
+  <!-- ==================== BOOKMARKLET MODAL ==================== -->
+  <div id="bmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl transition-colors">
+      <div class="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white" data-i18n="bmModalTitle">أداة الاستخراج التلقائي من البوابة</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400" data-i18n="bmModalSubtitle">اسحب الزر لمفضلة متصفحك واضغط عليه داخل صفحة المقررات</p>
+          </div>
+        </div>
+        <button onclick="closeBookmarkletModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <!-- Steps -->
+      <div class="space-y-2.5 text-xs text-slate-700 dark:text-slate-300">
+        <div class="flex items-start gap-2.5 bg-slate-50 dark:bg-slate-850 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+          <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 font-sans">1</span>
+          <div>
+            <p class="font-bold text-slate-900 dark:text-white" data-i18n="bmStep1Title">اسحب الزر التالي إلى شريط المفضلة (Bookmarks Bar):</p>
+            <div class="mt-2 flex items-center gap-2 flex-wrap">
+              <a id="bmDraggableLink" href="#" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm cursor-grab active:cursor-grabbing select-none" onclick="event.preventDefault(); showToast('اسحب هذا الزر بالماوس إلى شريط المفضلة بالأعلى!');">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                <span>⚡ استخراج جدول المقررات</span>
+              </a>
+              <span class="text-[11px] text-slate-400 font-medium" data-i18n="bmDragHint">← اسحب هذا الزر للأعلى</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-2.5 bg-slate-50 dark:bg-slate-850 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+          <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 font-sans">2</span>
+          <div>
+            <p class="font-bold text-slate-900 dark:text-white" data-i18n="bmStep2Title">افتح بوابة الجامعة:</p>
+            <p class="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5" data-i18n="bmStep2Desc">توجه إلى صفحة (المقررات المطروحة وفق الخطة).</p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-2.5 bg-slate-50 dark:bg-slate-850 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+          <span class="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 font-sans">3</span>
+          <div>
+            <p class="font-bold text-slate-900 dark:text-white" data-i18n="bmStep3Title">اضغط على الزر في المفضلة:</p>
+            <p class="text-slate-500 dark:text-slate-400 text-[11px] mt-0.5" data-i18n="bmStep3Desc">سيقوم السكريبت بقراءة جميع الشعب وتقليب الصفحات آلياً ونقلك إلى هنا مع أفضل 50 جدول جاهزة!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Buttons -->
+      <div class="pt-2 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
+        <button onclick="copyBookmarkletCode()" class="text-blue-600 dark:text-blue-400 hover:underline text-xs font-bold flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span data-i18n="bmCopyCode">نسخ كود البوكمارك يدوياً</span>
+        </button>
+
+        <button onclick="closeBookmarkletModal()" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold px-4 py-1.5 rounded-lg text-xs transition">
+          <span data-i18n="closeModal">إغلاق</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== SCRIPTS ==================== -->
+  <script>
+    const TRANSLATIONS = {
+      ar: {
+        appSubtitle: "منصة تحسين وتوليد الجداول الجامعية",
+        targetHoursLabel: "الساعات المستهدفة:",
+        allowClosedLabel: "إتاحة الشعب المغلقة:",
+        sortModeLabel: "أولوية الترتيب:",
+        sortDaysOff: "أقصى أيام فراغ",
+        sortMinGaps: "أقل فترات انتظار",
+        sortEarlyExit: "انتهاء مبكر",
+        sortEvening: "فترات مسائية",
+        coursesListLabel: "المقررات المتاحة:",
+        resetCoursesBtn: "إعادة تعيين",
+        generateBtn: "تحديث الجداول المقترحة",
+        shortcutHint: "التنقل السريع عبر مفاتيح الأسهم ( ← و → )",
+        copyCRNsBtn: "نسخ الشعب والمقررات",
+        exportICSBtn: "تصدير للتقويم (16 أسبوع)",
+        exportPNGBtn: "حفظ كصورة",
+        calendarHeading: "التقويم الأسبوعي (08:00 ص - 06:00 م)",
+        sectionsTableHeading: "الشعب والمقررات المسجلة في هذا الجدول",
+        clickCrnToCopy: "انقر على أي صف لنسخ رقم الشعبة واسم المقرر تلقائياً",
+        thCourse: "المقرر",
+        thType: "النوع",
+        thInstructor: "المحاضر",
+        thStatus: "الحالة",
+        thTimes: "المواعيد",
+        thRoom: "القاعة",
+        statusMandatory: "إجباري",
+        statusOptional: "اختياري",
+        statusExcluded: "استبعاد",
+        daysOffLabel: "أيام الفراغ:",
+        noDaysOff: "لا يوجد أيام فراغ",
+        gapsLabel: "فترات الانتظار:",
+        creditHoursLabel: "ساعة",
+        electivesLabel: "المواد الإضافية:",
+        onlyMandatory: "المقررات الأساسية فقط",
+        dayOffText: "يوم فراغ",
+        notAssigned: "لم يحدد",
+        uploadJsonBtn: "رفع ملف JSON",
+        bookmarkletBtn: "زر سحب المقررات (البوكمارك)",
+        bmModalTitle: "أداة الاستخراج التلقائي من البوابة",
+        bmModalSubtitle: "اسحب الزر لمفضلة متصفحك واضغط عليه داخل صفحة المقررات",
+        bmStep1Title: "اسحب الزر التالي إلى شريط المفضلة (Bookmarks Bar):",
+        bmDragHint: "← اسحب هذا الزر للأعلى",
+        bmStep2Title: "افتح بوابة الجامعة:",
+        bmStep2Desc: "توجه إلى صفحة (المقررات المطروحة وفق الخطة).",
+        bmStep3Title: "اضغط على الزر في المفضلة:",
+        bmStep3Desc: "سيقوم السكريبت بقراءة جميع الشعب وتقليب الصفحات آلياً ونقلك إلى هنا مع أفضل 50 جدول جاهزة!",
+        bmCopyCode: "نسخ كود البوكمارك يدوياً",
+        closeModal: "إغلاق"
+      },
+      en: {
+        appSubtitle: "University Timetable Optimizer",
+        targetHoursLabel: "Target Credits:",
+        allowClosedLabel: "Include Closed Sections:",
+        sortModeLabel: "Sort Priority:",
+        sortDaysOff: "Max Days Off",
+        sortMinGaps: "Minimum Breaks",
+        sortEarlyExit: "Early Exit",
+        sortEvening: "Evening Classes",
+        coursesListLabel: "Available Courses:",
+        resetCoursesBtn: "Reset",
+        generateBtn: "Update Schedules",
+        shortcutHint: "Quick navigation with arrow keys ( ← and → )",
+        copyCRNsBtn: "Copy CRNs & Courses",
+        exportICSBtn: "Export Calendar (16 Weeks)",
+        exportPNGBtn: "Save as PNG",
+        calendarHeading: "Weekly Timetable (08:00 AM - 06:00 PM)",
+        sectionsTableHeading: "Registered Sections & Courses in this Schedule",
+        clickCrnToCopy: "Click any row to copy CRN and course title",
+        thCourse: "Course",
+        thType: "Type",
+        thInstructor: "Instructor",
+        thStatus: "Status",
+        thTimes: "Times",
+        thRoom: "Room",
+        statusMandatory: "Mandatory",
+        statusOptional: "Elective",
+        statusExcluded: "Exclude",
+        daysOffLabel: "Days Off:",
+        noDaysOff: "No days off",
+        gapsLabel: "Total Breaks:",
+        creditHoursLabel: "Credits",
+        electivesLabel: "Added Electives:",
+        onlyMandatory: "Mandatory Courses Only",
+        dayOffText: "Day Off",
+        notAssigned: "TBA",
+        uploadJsonBtn: "Upload JSON",
+        bookmarkletBtn: "Portal Bookmarklet Scraper",
+        bmModalTitle: "Automatic Portal Data Scraper",
+        bmModalSubtitle: "Drag to your browser bookmarks bar & click inside registration page",
+        bmStep1Title: "Drag the button below to your Bookmarks Bar:",
+        bmDragHint: "← Drag this button up",
+        bmStep2Title: "Open your University Portal:",
+        bmStep2Desc: "Navigate to the offered courses page in EduGate / Portal.",
+        bmStep3Title: "Click the Bookmark in your browser:",
+        bmStep3Desc: "It will extract all sections across all pages & open this page with top 50 schedules!",
+        bmCopyCode: "Copy Bookmarklet Code Manually",
+        closeModal: "Close"
+      }
+    };
+
+    const COURSE_TRANSLATIONS = {
+      "الذكاء الاصطناعي": "Artificial Intelligence",
+      "تعلم الآلة": "Machine Learning",
+      "تفاعل الإنسان والحاسب": "Human-Computer Interaction",
+      "تطوير تطبيقات الويب": "Web Application Development",
+      "إدارة مشاريع تقنية المعلومات": "IT Project Management",
+      "القرآن الكريم (4)": "Holy Quran (4)",
+      "العقيده": "Islamic Creed",
+      "العقيدة": "Islamic Creed",
+      "التعلم العميق": "Deep Learning",
+      "تقنيات ريادة الأعمال": "Entrepreneurship Technologies",
+      "الأخلاقيات والابتكار المسؤول": "Ethics & Responsible Innovation",
+      "الحوسبة السحابية": "Cloud Computing",
+      "التنقيب عن البيانات": "Data Mining",
+      "عرض وتصوير البيانات": "Data Visualization",
+      "التطوير القائم على المنصات": "Platform-Based Development",
+      "أمن البيانات وخصوصيتها": "Data Security & Privacy"
+    };
+
+    const INSTRUCTOR_TRANSLATIONS = {
+      "عادل ابراهيم محمد رفاعي": "Adel Ibrahim Refai",
+      "محمد سعيد علي آل عطيه الغامدي": "Mohammed Saeed Al-Ghamdi",
+      "احمد حمود حميد الرويثي": "Ahmed Hamoud Al-Ruwathi",
+      "ابراهيم عبدالرحمن ابراهيم الشمسان": "Ibrahim Abdulrahman Al-Shamsan",
+      "سامي عبدالرحمن حثلين الحيسوني الحربي": "Sami Abdulrahman Al-Harbi",
+      "فيصل حامدي": "Faisal Hamdi",
+      "علي اسماعيل مصطفى دوملو": "Ali Ismail Domlo",
+      "ماجد امين بكر حريري": "Majed Amin Hariri",
+      "فهيد نداء بطاح العنزي": "Fuhaid Neda Al-Enezi",
+      "بسام علي حسن الاحمدي": "Bassam Ali Al-Ahmadi",
+      "سهيل محمد محمدسعيد الحازمي": "Suhail Mohammed Al-Hazmi",
+      "محمد بن عيدة": "Mohammed Bin Eida",
+      "عمر محمد عبدالمجيد نمنكاني": "Omar Mohammed Namankani",
+      "عماد نبيل حسن حرب": "Emad Nabil Harb",
+      "عمر عبدالرحيم ظاهر نوح": "Omar Abdulrahim Noah",
+      "عبدالله محمد علي السحيباني": "Abdullah Mohammed Al-Suhaibani",
+      "ياسر احمد صالح الضويان": "Yasser Ahmed Al-Dhwayan",
+      "أسامه حامد بنر حومة": "Osama Hamed Ben Houma",
+      "لم يحدد من الكلية": "To Be Announced",
+      "لم يحدد": "To Be Announced"
+    };
+
+    const DAYS_MAP = {
+      ar: ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"],
+      en: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"]
+    };
+
+    // 12 Refined Theme Color Palettes with Dynamic Light/Dark Contrast
+    const COURSE_COLORS = [
+      { bg: "#eff6ff", border: "#3b82f6", text: "#1e40af", darkBg: "#172554", darkBorder: "#3b82f6", darkText: "#93c5fd" },
+      { bg: "#f0fdf4", border: "#10b981", text: "#166534", darkBg: "#052e16", darkBorder: "#10b981", darkText: "#86efac" },
+      { bg: "#faf5ff", border: "#a855f7", text: "#6b21a8", darkBg: "#3b0764", darkBorder: "#a855f7", darkText: "#d8b4fe" },
+      { bg: "#fffbeb", border: "#f59e0b", text: "#92400e", darkBg: "#451a03", darkBorder: "#f59e0b", darkText: "#fde68a" },
+      { bg: "#fff1f2", border: "#f43f5e", text: "#9f1239", darkBg: "#4c0519", darkBorder: "#f43f5e", darkText: "#fecdd3" },
+      { bg: "#ecfeff", border: "#06b6d4", text: "#155e75", darkBg: "#083344", darkBorder: "#06b6d4", darkText: "#a5f3fc" },
+      { bg: "#fff7ed", border: "#f97316", text: "#9a3412", darkBg: "#431407", darkBorder: "#f97316", darkText: "#fed7aa" },
+      { bg: "#eef2ff", border: "#6366f1", text: "#3730a3", darkBg: "#1e1b4b", darkBorder: "#6366f1", darkText: "#c7d2fe" },
+      { bg: "#f0fdfa", border: "#14b8a6", text: "#115e59", darkBg: "#042f2e", darkBorder: "#14b8a6", darkText: "#99f6e4" },
+      { bg: "#fdf4ff", border: "#d946ef", text: "#86198f", darkBg: "#4a044e", darkBorder: "#d946ef", darkText: "#f5d0fe" },
+      { bg: "#f7fee7", border: "#84cc16", text: "#3f6212", darkBg: "#1a2e05", darkBorder: "#84cc16", darkText: "#d9f99d" },
+      { bg: "#f0f9ff", border: "#0ea5e9", text: "#075985", darkBg: "#082f49", darkBorder: "#0ea5e9", darkText: "#bae6fd" }
+    ];
+
+    const DEFAULT_RAW_DATA = [
+      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"1311","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"عادل ابراهيم محمد رفاعي","slots":[{"day":"1","time":"01:00 م - 01:50 م","room":"203"}]},
+      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"2897","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"محمد سعيد علي آل عطيه الغامدي","slots":[{"day":"2","time":"03:00 م - 03:50 م","room":"310"}]},
+      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"2898","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"لم يحدد من الكلية","slots":[{"day":"1","time":"03:00 م - 03:50 م","room":"310"}]},
+      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"2899","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"احمد حمود حميد الرويثي","slots":[{"day":"1","time":"01:00 م - 01:50 م","room":"206"}]},
+      {"course_code":"قرأ 3012","course_name":"القرآن الكريم (4)","section_number":"2997","type":"نظري","sub_sections_count":"1","status":"مفتوحة","instructor":"محمد سعيد علي آل عطيه الغامدي","slots":[{"day":"4","time":"05:00 م - 05:50 م","room":"207"}]},
+      {"course_code":"عقد 3006","course_name":"العقيده","section_number":"1309","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"ابراهيم عبدالرحمن ابراهيم الشمسان","slots":[{"day":"3","time":"01:00 م - 01:50 م","room":"203"},{"day":"2","time":"02:00 م - 02:50 م","room":"204"},{"day":"2","time":"03:00 م - 03:50 م","room":"204"}]},
+      {"course_code":"عقد 3006","course_name":"العقيده","section_number":"2819","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"لم يحدد من الكلية","slots":[{"day":"1 3","time":"02:00 م - 03:20 م","room":"210"}]},
+      {"course_code":"عقد 3006","course_name":"العقيده","section_number":"2990","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"لم يحدد من الكلية","slots":[{"day":"1 3","time":"03:30 م - 04:50 م","room":"210"}]},
+      {"course_code":"عقد 3006","course_name":"العقيده","section_number":"2991","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"سامي عبدالرحمن حثلين الحيسوني الحربي","slots":[{"day":"2 4","time":"01:00 م - 02:20 م","room":"102"}]},
+      {"course_code":"عال 3452","course_name":"تعلم الآلة","section_number":"2455","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"2","time":"10:00 ص - 10:50 ص","room":"308"},{"day":"2","time":"11:00 ص - 11:50 ص","room":"308"}]},
+      {"course_code":"عال 3452","course_name":"تعلم الآلة","section_number":"2456","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"علي اسماعيل مصطفى دوملو","slots":[{"day":"4","time":"01:00 م - 01:50 م","room":"107"},{"day":"4","time":"02:00 م - 02:50 م","room":"107"}]},
+      {"course_code":"عال 3452","course_name":"تعلم الآلة","section_number":"2539","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"فيصل حامدي","slots":[{"day":"1","time":"02:00 م - 02:50 م","room":"207"},{"day":"1","time":"03:00 م - 03:50 م","room":"207"}]},
+      {"course_code":"عال 3452","course_name":"تعلم الآلة","section_number":"2538","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"علي اسماعيل مصطفى دوملو","slots":[{"day":"4","time":"03:00 م - 03:50 م","room":"108"},{"day":"4","time":"04:00 م - 04:50 م","room":"108"}]},
+      {"course_code":"عال 3483","course_name":"التطوير القائم على المنصات","section_number":"2533","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"ماجد امين بكر حريري","slots":[{"day":"3","time":"02:00 م - 03:20 م","room":"202"},{"day":"4","time":"02:00 م - 03:20 م","room":"204"}]},
+      {"course_code":"عال 3483","course_name":"التطوير القائم على المنصات","section_number":"2551","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"ماجد امين بكر حريري","slots":[{"day":"3 5","time":"08:00 ص - 09:20 ص","room":"104"}]},
+      {"course_code":"نما 3473","course_name":"تقنيات ريادة الأعمال","section_number":"2453","type":"نظري","sub_sections_count":"2","status":"مغلقة","instructor":"فهيد نداء بطاح العنزي","slots":[{"day":"1","time":"10:00 ص - 10:50 ص","room":"208"},{"day":"1","time":"11:00 ص - 11:50 ص","room":"208"}]},
+      {"course_code":"نما 3473","course_name":"تقنيات ريادة الأعمال","section_number":"2558","type":"نظري","sub_sections_count":"2","status":"مفتوحة","instructor":"فهيد نداء بطاح العنزي","slots":[{"day":"3","time":"11:00 ص - 11:50 ص","room":"207"},{"day":"3","time":"12:00 م - 12:50 م","room":"207"}]},
+      {"course_code":"نما 3540","course_name":"الأخلاقيات والابتكار المسؤول","section_number":"2541","type":"نظري","sub_sections_count":"2","status":"مغلقة","instructor":"بسام علي حسن الاحمدي","slots":[{"day":"5","time":"02:00 م - 02:50 م","room":"307"},{"day":"5","time":"03:00 م - 03:50 م","room":"307"}]},
+      {"course_code":"عال 3451","course_name":"الذكاء الاصطناعي","section_number":"2530","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"4","time":"11:00 ص - 11:50 ص","room":"307"},{"day":"4","time":"01:00 م - 01:50 م","room":"307"}]},
+      {"course_code":"عال 3451","course_name":"الذكاء الاصطناعي","section_number":"2529","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"1","time":"10:00 ص - 10:50 ص","room":"107"},{"day":"1","time":"11:00 ص - 11:50 ص","room":"107"}]},
+      {"course_code":"عال 3451","course_name":"الذكاء الاصطناعي","section_number":"2560","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"1","time":"08:00 ص - 08:50 ص","room":"308"},{"day":"1","time":"09:00 ص - 09:50 ص","room":"308"}]},
+      {"course_code":"عال 3451","course_name":"الذكاء الاصطناعي","section_number":"2559","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"فيصل حامدي","slots":[{"day":"3","time":"02:00 م - 02:50 م","room":"107"},{"day":"3","time":"03:00 م - 03:50 م","room":"107"}]},
+      {"course_code":"نما 3462","course_name":"إدارة مشاريع تقنية المعلومات","section_number":"2474","type":"نظري","sub_sections_count":"2","status":"مغلقة","instructor":"سهيل محمد محمدسعيد الحازمي","slots":[{"day":"4","time":"11:00 ص - 11:50 ص","room":"205"},{"day":"4","time":"12:00 م - 12:50 م","room":"205"}]},
+      {"course_code":"نما 3462","course_name":"إدارة مشاريع تقنية المعلومات","section_number":"2563","type":"نظري","sub_sections_count":"2","status":"مفتوحة","instructor":"سهيل محمد محمدسعيد الحازمي","slots":[{"day":"4","time":"02:00 م - 02:50 م","room":"206"},{"day":"4","time":"03:00 م - 03:50 م","room":"206"}]},
+      {"course_code":"تقا 3407","course_name":"تفاعل الإنسان والحاسب","section_number":"2457","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"محمد بن عيدة","slots":[{"day":"4","time":"08:00 ص - 09:20 ص","room":"201"},{"day":"3","time":"09:30 ص - 10:50 ص","room":"201"}]},
+      {"course_code":"تقا 3407","course_name":"تفاعل الإنسان والحاسب","section_number":"2458","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"محمد بن عيدة","slots":[{"day":"4","time":"09:30 ص - 10:50 ص","room":"201"},{"day":"2","time":"12:30 م - 01:50 م","room":"201"}]},
+      {"course_code":"تقا 3407","course_name":"تفاعل الإنسان والحاسب","section_number":"2459","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"عمر محمد عبدالمجيد نمنكاني","slots":[{"day":"3 4","time":"11:00 ص - 12:20 م","room":"201"}]},
+      {"course_code":"تقا 3407","course_name":"تفاعل الإنسان والحاسب","section_number":"2460","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"محمد بن عيدة","slots":[{"day":"3","time":"12:30 م - 01:50 م","room":"201"},{"day":"1","time":"01:00 م - 02:20 م","room":"201"}]},
+      {"course_code":"نما 3401","course_name":"التنقيب عن البيانات","section_number":"2543","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"عماد نبيل حسن حرب","slots":[{"day":"1","time":"10:00 ص - 10:50 ص","room":"204"},{"day":"1","time":"11:00 ص - 11:50 ص","room":"204"}]},
+      {"course_code":"نما 3401","course_name":"التنقيب عن البيانات","section_number":"2542","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"عماد نبيل حسن حرب","slots":[{"day":"5","time":"10:00 ص - 10:50 ص","room":"105"},{"day":"5","time":"11:00 ص - 11:50 ص","room":"105"}]},
+      {"course_code":"نما 3401","course_name":"التنقيب عن البيانات","section_number":"4340","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"عماد نبيل حسن حرب","slots":[{"day":"5","time":"08:00 ص - 08:50 ص","room":"205"},{"day":"5","time":"09:00 ص - 09:50 ص","room":"205"}]},
+      {"course_code":"تقا 3305","course_name":"تطوير تطبيقات الويب","section_number":"2469","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"عمر عبدالرحيم ظاهر نوح","slots":[{"day":"5","time":"10:00 ص - 10:50 ص","room":"208"},{"day":"5","time":"11:00 ص - 11:50 ص","room":"208"}]},
+      {"course_code":"تقا 3305","course_name":"تطوير تطبيقات الويب","section_number":"2468","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"عمر عبدالرحيم ظاهر نوح","slots":[{"day":"2","time":"01:00 م - 01:50 م","room":"206"},{"day":"2","time":"02:00 م - 02:50 م","room":"206"}]},
+      {"course_code":"تقا 3305","course_name":"تطوير تطبيقات الويب","section_number":"2562","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"عمر عبدالرحيم ظاهر نوح","slots":[{"day":"3","time":"09:00 ص - 09:50 ص","room":"308"},{"day":"3","time":"10:00 ص - 10:50 ص","room":"308"}]},
+      {"course_code":"تقا 3305","course_name":"تطوير تطبيقات الويب","section_number":"2561","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"عمر عبدالرحيم ظاهر نوح","slots":[{"day":"5","time":"08:00 ص - 08:50 ص","room":"108"},{"day":"5","time":"09:00 ص - 09:50 ص","room":"108"}]},
+      {"course_code":"نما 3404","course_name":"عرض وتصوير البيانات","section_number":"2557","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"عبدالله محمد علي السحيباني","slots":[{"day":"4","time":"08:00 ص - 08:50 ص","room":"104"},{"day":"3","time":"01:00 م - 01:50 م","room":"210"},{"day":"3","time":"02:00 م - 02:50 م","room":"210"}]},
+      {"course_code":"عال 3553","course_name":"التعلم العميق","section_number":"2540","type":"نظري","sub_sections_count":"3","status":"مغلقة","instructor":"عماد نبيل حسن حرب","slots":[{"day":"1 5","time":"12:00 م - 12:50 م","room":"107"},{"day":"1","time":"01:00 م - 01:50 م","room":"107"}]},
+      {"course_code":"تقا 3408","course_name":"الحوسبة السحابية","section_number":"2462","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"ياسر احمد صالح الضويان","slots":[{"day":"1","time":"10:00 ص - 10:50 ص","room":"207"},{"day":"1","time":"11:00 ص - 11:50 ص","room":"207"}]},
+      {"course_code":"تقا 3408","course_name":"الحوسبة السحابية","section_number":"2461","type":"عملي","sub_sections_count":"","status":"مغلقة","instructor":"ياسر احمد صالح الضويان","slots":[{"day":"2","time":"11:00 ص - 11:50 ص","room":"107"},{"day":"2","time":"12:00 م - 12:50 م","room":"107"}]},
+      {"course_code":"تقا 3408","course_name":"الحوسبة السحابية","section_number":"2554","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"ياسر احمد صالح الضويان","slots":[{"day":"1","time":"08:00 ص - 08:50 ص","room":"207"},{"day":"1","time":"09:00 ص - 09:50 ص","room":"207"}]},
+      {"course_code":"تقا 3408","course_name":"الحوسبة السحابية","section_number":"2553","type":"عملي","sub_sections_count":"","status":"مفتوحة","instructor":"ياسر احمد صالح الضويان","slots":[{"day":"2","time":"08:00 ص - 08:50 ص","room":"108"},{"day":"2","time":"09:00 ص - 09:50 ص","room":"108"}]},
+      {"course_code":"نما 3303","course_name":"أمن البيانات وخصوصيتها","section_number":"2550","type":"نظري","sub_sections_count":"3","status":"مفتوحة","instructor":"أسامه حامد بنر حومة","slots":[{"day":"1","time":"08:00 ص - 08:50 ص","room":"102"},{"day":"1","time":"09:00 ص - 09:50 ص","room":"102"},{"day":"5","time":"11:00 ص - 11:50 ص","room":"104"}]}
+    ];
+
+    let currentTheme = 'light';
+    let currentLang = 'ar';
+    let rawData = DEFAULT_RAW_DATA;
+    let normalizedCourses = {};
+    let currentSchedules = [];
+    let currentIndex = 0;
+    let currentSortMode = 'days_off';
+    let courseColorMap = {};
+
+    function initTheme() {
+      const savedTheme = localStorage.getItem('jadwal_theme') || 'light';
+      setTheme(savedTheme);
+    }
+
+    function setTheme(theme) {
+      currentTheme = theme;
+      localStorage.setItem('jadwal_theme', theme);
+      const root = document.documentElement;
+      const sunIcon = document.getElementById('themeIconSun');
+      const moonIcon = document.getElementById('themeIconMoon');
+
+      if (theme === 'dark') {
+        root.classList.add('dark');
+        if (sunIcon) sunIcon.classList.remove('hidden');
+        if (moonIcon) moonIcon.classList.add('hidden');
+      } else {
+        root.classList.remove('dark');
+        if (sunIcon) sunIcon.classList.add('hidden');
+        if (moonIcon) moonIcon.classList.remove('hidden');
+      }
+
+      // Re-render components that have color-sensitive states
+      if (Object.keys(normalizedCourses).length > 0) {
+        for (const code in normalizedCourses) {
+          const checkedRadio = document.querySelector(`input[name="state_${code}"]:checked`);
+          if (checkedRadio) updateCourseCardStyle(code, checkedRadio.value);
+        }
+      }
+      if (currentSchedules.length > 0) {
+        showSchedule(currentIndex);
+      }
+    }
+
+    function toggleTheme() {
+      setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    }
+
+    function timeToMinutes(str) {
+      if (!str) return 0;
+      str = str.trim();
+      const m12 = str.match(/(\d{1,2}):(\d{2})\s*(ص|م)/);
+      if (m12) {
+        let h = parseInt(m12[1]), m = parseInt(m12[2]), p = m12[3];
+        if (p === 'م' && h !== 12) h += 12;
+        if (p === 'ص' && h === 12) h = 0;
+        return h * 60 + m;
+      }
+      const m24 = str.match(/(\d{1,2}):(\d{2})/);
+      if (m24) return parseInt(m24[1]) * 60 + parseInt(m24[2]);
+      return 0;
+    }
+
+    function minutesToTime(mins, lang = currentLang) {
+      let h = Math.floor(mins / 60);
+      let m = mins % 60;
+      let pAr = h < 12 ? 'ص' : 'م';
+      let pEn = h < 12 ? 'AM' : 'PM';
+      let dh = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+      let period = lang === 'en' ? pEn : pAr;
+      return `${String(dh).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+    }
+
+    function parseSlots(rawSlots) {
+      const dayMap = { "1": "الأحد", "2": "الاثنين", "3": "الثلاثاء", "4": "الأربعاء", "5": "الخميس" };
+      let clean = [];
+      for (const slot of rawSlots) {
+        if (slot.note) continue;
+        const dayStr = String(slot.day || '').trim();
+        if (!dayStr) continue;
+
+        let startM = 0, endM = 0;
+        if (slot.start && slot.end) {
+          startM = timeToMinutes(slot.start);
+          endM = timeToMinutes(slot.end);
+        } else if (slot.time && slot.time.includes('-')) {
+          const parts = slot.time.split('-');
+          startM = timeToMinutes(parts[0]);
+          endM = timeToMinutes(parts[1]);
+        }
+        if (!startM || !endM) continue;
+
+        for (const num of dayStr.split(/\s+/)) {
+          const dayName = dayMap[num] || num;
+          clean.push({ day: dayName, startMin: startM, endMin: endM, room: (slot.room || '').trim() });
+        }
+      }
+      return clean;
+    }
+
+    function normalizeDataset(items) {
+      const courses = {};
+      for (const item of items) {
+        if (item.sections && item.course_code) {
+          const code = item.course_code.trim();
+          if (!courses[code]) {
+            courses[code] = { code, name: item.course_name.trim(), creditHours: 3, theory: [], practical: [] };
+          }
+          for (const sec of item.sections) {
+            const secObj = {
+              sectionNumber: sec.section_number.trim(),
+              type: (sec.type || 'نظري').trim(),
+              status: (sec.status || 'مفتوحة').trim(),
+              instructor: (sec.instructor || '').trim(),
+              slots: parseSlots(sec.slots || []),
+              courseCode: code,
+              courseName: item.course_name.trim()
+            };
+            if (secObj.type.includes('عملي')) courses[code].practical.push(secObj);
+            else courses[code].theory.push(secObj);
+          }
+        } else if (item.course_code) {
+          const code = item.course_code.trim();
+          if (!courses[code]) {
+            let h = parseInt(item.sub_sections_count) || 3;
+            if (item.course_name.includes('القرآن') || code.includes('قرأ')) h = 1;
+            else if (item.course_name.includes('ريادة') || item.course_name.includes('الأخلاقيات') || item.course_name.includes('إدارة مشاريع')) h = 2;
+            courses[code] = { code, name: item.course_name.trim(), creditHours: h, theory: [], practical: [] };
+          }
+          const secObj = {
+            sectionNumber: item.section_number.trim(),
+            type: (item.type || 'نظري').trim(),
+            status: (item.status || 'مفتوحة').trim(),
+            instructor: (item.instructor || '').trim(),
+            slots: parseSlots(item.slots || []),
+            courseCode: code,
+            courseName: item.course_name.trim()
+          };
+          if (secObj.type.includes('عملي')) courses[code].practical.push(secObj);
+          else courses[code].theory.push(secObj);
+        }
+      }
+      return courses;
+    }
+
+    function getTranslatedCourseName(arName) {
+      if (currentLang === 'en') return COURSE_TRANSLATIONS[arName] || arName;
+      return arName;
+    }
+
+    function getTranslatedInstructor(arName) {
+      if (!arName) return TRANSLATIONS[currentLang].notAssigned;
+      if (currentLang === 'en') {
+        if (INSTRUCTOR_TRANSLATIONS[arName]) return INSTRUCTOR_TRANSLATIONS[arName];
+        return arName.replace(/محمد/g, "Mohammed").replace(/احمد/g, "Ahmed").replace(/علي/g, "Ali").replace(/بن/g, "Bin");
+      }
+      return arName;
+    }
+
+    function getTranslatedType(typeStr) {
+      if (currentLang === 'en') return typeStr.includes('عملي') ? 'Lab' : 'Lecture';
+      return typeStr;
+    }
+
+    function getTranslatedStatus(statusStr) {
+      if (currentLang === 'en') return statusStr === 'مفتوحة' ? 'Open' : 'Closed';
+      return statusStr;
+    }
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'ar' ? 'en' : 'ar';
+      applyLanguage();
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLang;
+      document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+      document.body.className = currentLang === 'ar' 
+        ? 'bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-blue-600 selection:text-white transition-colors duration-150' 
+        : 'bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-blue-600 selection:text-white lang-en transition-colors duration-150';
+      
+      document.getElementById('langBtnText').innerText = currentLang === 'ar' ? 'English' : 'العربية';
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (TRANSLATIONS[currentLang][key]) {
+          el.innerText = TRANSLATIONS[currentLang][key];
+        }
+      });
+
+      document.getElementById('courseSearchInput').placeholder = currentLang === 'en' ? 'Filter courses...' : 'تصفية المقررات...';
+
+      DAYS_MAP.ar.forEach((dAr, i) => {
+        const headerEl = document.getElementById(`dayHeader_${i}`);
+        if (headerEl) headerEl.innerText = currentLang === 'en' ? DAYS_MAP.en[i] : DAYS_MAP.ar[i];
+      });
+
+      renderCoursesList();
+      if (currentSchedules.length > 0) showSchedule(currentIndex);
+    }
+
+    function updateHoursDisplay(val) {
+      document.getElementById('hoursValueDisplay').innerText = val;
+    }
+
+    function setSortMode(mode) {
+      currentSortMode = mode;
+      document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.className = 'sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition';
+      });
+      const activeBtn = document.getElementById(`sortBtn_${mode}`);
+      if (activeBtn) {
+        activeBtn.className = 'sort-btn py-1.5 px-2 rounded-lg border border-blue-500 dark:border-blue-500/50 bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-blue-300 text-center font-bold transition shadow-2xs';
+      }
+      sortAndRefreshSchedules();
+    }
+
+    // Dynamic Visual Color Update for Course Card Selection (Adapted for Light & Dark)
+    function updateCourseCardStyle(code, state) {
+      const card = document.getElementById(`course_card_${code}`);
+      if (!card) return;
+
+      const labelMand = document.getElementById(`lbl_m_${code}`);
+      const labelOpt = document.getElementById(`lbl_o_${code}`);
+      const labelExcl = document.getElementById(`lbl_e_${code}`);
+
+      // Reset base label styles
+      if (labelMand) labelMand.className = "block text-center py-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition cursor-pointer font-semibold";
+      if (labelOpt) labelOpt.className = "block text-center py-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer font-semibold";
+      if (labelExcl) labelExcl.className = "block text-center py-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-rose-700 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer font-semibold";
+
+      if (state === 'mandatory') {
+        card.className = 'course-card bg-emerald-50/70 dark:bg-emerald-950/30 border-2 border-emerald-500 dark:border-emerald-500/80 rounded-xl p-2.5 text-xs space-y-1.5 transition-all shadow-xs';
+        if (labelMand) labelMand.className = "block text-center py-1 rounded-md bg-emerald-600 text-white font-extrabold shadow-xs transition cursor-pointer";
+      } else if (state === 'excluded') {
+        card.className = 'course-card bg-rose-50/60 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-800/80 opacity-75 rounded-xl p-2.5 text-xs space-y-1.5 transition-all';
+        if (labelExcl) labelExcl.className = "block text-center py-1 rounded-md bg-rose-600 text-white font-extrabold shadow-xs transition cursor-pointer";
+      } else {
+        card.className = 'course-card bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs space-y-1.5 transition-all shadow-2xs hover:border-slate-300 dark:hover:border-slate-700';
+        if (labelOpt) labelOpt.className = "block text-center py-1 rounded-md bg-slate-800 dark:bg-slate-700 text-white font-extrabold shadow-xs transition cursor-pointer";
+      }
+    }
+
+    function onCourseStateChange(code, newState) {
+      updateCourseCardStyle(code, newState);
+    }
+
+    function renderCoursesList() {
+      const container = document.getElementById('coursesListContainer');
+      container.innerHTML = '';
+      const codes = Object.keys(normalizedCourses);
+
+      const defaultMand = ["تفاعل الانسان", "الذكاء الاصطناعي", "ادارة مشاريع", "قران", "تطوير تطبيقات الويب"];
+      const defaultExcl = ["التعلم العميق", "تعلم الالة", "تعلم الآلة", "العقيده", "العقيدة"];
+
+      for (const code of codes) {
+        const c = normalizedCourses[code];
+        const cText = `${code} ${c.name}`.toLowerCase();
+        
+        let state = 'optional';
+        const existingRadio = document.querySelector(`input[name="state_${code}"]:checked`);
+        if (existingRadio) {
+          state = existingRadio.value;
+        } else {
+          if (defaultMand.some(m => cText.includes(m))) state = 'mandatory';
+          else if (defaultExcl.some(e => cText.includes(e))) state = 'excluded';
+        }
+
+        const displayName = getTranslatedCourseName(c.name);
+        const card = document.createElement('div');
+        card.id = `course_card_${code}`;
+        card.innerHTML = `
+          <div class="flex items-center justify-between font-bold text-slate-800 dark:text-slate-200">
+            <span class="truncate max-w-[210px]" title="${displayName}">${displayName}</span>
+            <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded font-mono font-bold">${c.creditHours} ${currentLang === 'ar' ? 'س' : 'CR'}</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 text-[10px] pt-1 border-t border-slate-100 dark:border-slate-800">
+            <div>
+              <input type="radio" id="m_${code}" name="state_${code}" value="mandatory" ${state === 'mandatory' ? 'checked' : ''} class="state-radio hidden" onchange="onCourseStateChange('${code}', 'mandatory')">
+              <label id="lbl_m_${code}" for="m_${code}">${TRANSLATIONS[currentLang].statusMandatory}</label>
+            </div>
+            <div>
+              <input type="radio" id="o_${code}" name="state_${code}" value="optional" ${state === 'optional' ? 'checked' : ''} class="state-radio hidden" onchange="onCourseStateChange('${code}', 'optional')">
+              <label id="lbl_o_${code}" for="o_${code}">${TRANSLATIONS[currentLang].statusOptional}</label>
+            </div>
+            <div>
+              <input type="radio" id="e_${code}" name="state_${code}" value="excluded" ${state === 'excluded' ? 'checked' : ''} class="state-radio hidden" onchange="onCourseStateChange('${code}', 'excluded')">
+              <label id="lbl_e_${code}" for="e_${code}">${TRANSLATIONS[currentLang].statusExcluded}</label>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+        updateCourseCardStyle(code, state);
+      }
+    }
+
+    function filterCoursesList(query) {
+      query = query.trim().toLowerCase();
+      for (const code in normalizedCourses) {
+        const c = normalizedCourses[code];
+        const card = document.getElementById(`course_card_${code}`);
+        if (!card) continue;
+        const matches = code.toLowerCase().includes(query) || c.name.toLowerCase().includes(query) || getTranslatedCourseName(c.name).toLowerCase().includes(query);
+        card.style.display = matches ? 'block' : 'none';
+      }
+    }
+
+    function resetAllCourseStates() {
+      for (const code in normalizedCourses) {
+        const rad = document.querySelector(`input[name="state_${code}"][value="optional"]`);
+        if (rad) {
+          rad.checked = true;
+          updateCourseCardStyle(code, 'optional');
+        }
+      }
+    }
+
+    function hasConflict(slots) {
+      const byDay = {};
+      for (const s of slots) {
+        if (!byDay[s.day]) byDay[s.day] = [];
+        byDay[s.day].push(s);
+      }
+      for (const day in byDay) {
+        const sorted = byDay[day].sort((a, b) => a.startMin - b.startMin);
+        for (let i = 0; i < sorted.length - 1; i++) {
+          if (sorted[i + 1].startMin < sorted[i].endMin) return true;
+        }
+      }
+      return false;
+    }
+
+    function evaluateSchedule(sections) {
+      const allSlots = [];
+      for (const sec of sections) allSlots.push(...sec.slots);
+
+      const byDay = {};
+      DAYS_MAP.ar.forEach(d => byDay[d] = []);
+      for (const s of allSlots) if (byDay[s.day]) byDay[s.day].push(s);
+
+      const daysOff = [];
+      let totalGaps = 0;
+      let totalLateMinutes = 0;
+
+      for (const d of DAYS_MAP.ar) {
+        const sls = byDay[d];
+        if (sls.length === 0) {
+          daysOff.push(d);
+        } else {
+          sls.sort((a, b) => a.startMin - b.startMin);
+          for (let i = 0; i < sls.length - 1; i++) {
+            const gap = sls[i + 1].startMin - sls[i].endMin;
+            if (gap > 0) totalGaps += gap;
+          }
+          totalLateMinutes += sls[sls.length - 1].endMin;
+        }
+      }
+
+      return { daysOff, daysOffCount: daysOff.length, totalGaps, totalLateMinutes, sections };
+    }
+
+    function getCombinations(arr, k) {
+      let result = [];
+      function backtrack(start, comb) {
+        if (comb.length === k) {
+          result.push([...comb]);
+          return;
+        }
+        for (let i = start; i < arr.length; i++) {
+          comb.push(arr[i]);
+          backtrack(i + 1, comb);
+          comb.pop();
+        }
+      }
+      backtrack(0, []);
+      return result;
+    }
+
+    function getCartesianProduct(arrays) {
+      return arrays.reduce((acc, curr) => {
+        let res = [];
+        for (let a of acc) {
+          for (let c of curr) {
+            res.push([...a, c]);
+          }
+        }
+        return res;
+      }, [[]]);
+    }
+
+    function generateTop50Schedules() {
+      const mandatoryCodes = [];
+      const excludedCodes = [];
+      const optionalCodes = [];
+
+      for (const code in normalizedCourses) {
+        const rad = document.querySelector(`input[name="state_${code}"]:checked`);
+        const val = rad ? rad.value : 'optional';
+        if (val === 'mandatory') mandatoryCodes.push(code);
+        else if (val === 'excluded') excludedCodes.push(code);
+        else optionalCodes.push(code);
+      }
+
+      const targetHours = parseInt(document.getElementById('hoursSlider').value) || 19;
+      const allowClosed = document.getElementById('allowClosedSwitch').checked;
+
+      const mandHours = mandatoryCodes.reduce((sum, c) => sum + normalizedCourses[c].creditHours, 0);
+      const remainingHours = targetHours - mandHours;
+
+      let validSets = [];
+      if (remainingHours === 0) {
+        validSets.push(mandatoryCodes);
+      } else {
+        for (let r = 1; r <= optionalCodes.length; r++) {
+          const combs = getCombinations(optionalCodes, r);
+          for (const comb of combs) {
+            const h = comb.reduce((s, c) => s + normalizedCourses[c].creditHours, 0);
+            if (h === remainingHours) {
+              validSets.push([...mandatoryCodes, ...comb]);
+            }
+          }
+        }
+      }
+
+      let validSchedules = [];
+
+      for (const cSet of validSets) {
+        const courseOptions = [];
+        let possible = true;
+
+        for (const code of cSet) {
+          const c = normalizedCourses[code];
+          const th = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
+          const pr = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
+
+          let opts = [];
+          if (pr.length > 0) {
+            for (const t of th) {
+              for (const p of pr) {
+                if (!hasConflict([...t.slots, ...p.slots])) {
+                  opts.push([t, p]);
+                }
+              }
+            }
+          } else {
+            for (const t of th) opts.push([t]);
+          }
+
+          if (opts.length === 0) {
+            possible = false;
+            break;
+          }
+          courseOptions.push(opts);
+        }
+
+        if (!possible) continue;
+
+        const allCombinations = getCartesianProduct(courseOptions);
+        for (const comb of allCombinations) {
+          const flatSections = comb.flat();
+          const allSlots = flatSections.flatMap(s => s.slots);
+          if (!hasConflict(allSlots)) {
+            const evalRes = evaluateSchedule(flatSections);
+            evalRes.courseSet = cSet;
+            evalRes.totalHours = cSet.reduce((s, c) => s + normalizedCourses[c].creditHours, 0);
+            validSchedules.push(evalRes);
+          }
+        }
+      }
+
+      if (validSchedules.length > 0) {
+        currentSchedules = validSchedules;
+        sortAndRefreshSchedules();
+      } else {
+        showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets);
+      }
+    }
+
+    function sortAndRefreshSchedules() {
+      if (!currentSchedules || currentSchedules.length === 0) return;
+
+      if (currentSortMode === 'days_off') {
+        currentSchedules.sort((a, b) => b.daysOffCount !== a.daysOffCount ? b.daysOffCount - a.daysOffCount : a.totalGaps - b.totalGaps);
+      } else if (currentSortMode === 'min_gaps') {
+        currentSchedules.sort((a, b) => a.totalGaps !== b.totalGaps ? a.totalGaps - b.totalGaps : b.daysOffCount - a.daysOffCount);
+      } else if (currentSortMode === 'early_exit') {
+        currentSchedules.sort((a, b) => a.totalLateMinutes - b.totalLateMinutes);
+      } else if (currentSortMode === 'evening') {
+        currentSchedules.sort((a, b) => b.totalLateMinutes - a.totalLateMinutes);
+      }
+
+      currentIndex = 0;
+      showSchedule(0);
+    }
+
+    function showSchedule(idx) {
+      if (!currentSchedules || idx < 0 || idx >= currentSchedules.length) return;
+      currentIndex = idx;
+      const sched = currentSchedules[idx];
+      const rank = idx + 1;
+      const total = Math.min(50, currentSchedules.length);
+
+      document.getElementById('rankBadgeText').innerText = `#${rank}`;
+      
+      const offDaysTranslated = sched.daysOff.map(d => {
+        const dayIdx = DAYS_MAP.ar.indexOf(d);
+        return currentLang === 'en' ? DAYS_MAP.en[dayIdx] : d;
+      });
+      document.getElementById('daysOffBadge').innerText = sched.daysOff.length > 0 ? `${TRANSLATIONS[currentLang].daysOffLabel} ${offDaysTranslated.join(', ')}` : TRANSLATIONS[currentLang].noDaysOff;
+      document.getElementById('gapSummaryText').innerText = `${TRANSLATIONS[currentLang].gapsLabel} ${(sched.totalGaps / 60).toFixed(1)} ${currentLang === 'ar' ? 'ساعة' : 'hrs'} • ${sched.totalHours} ${TRANSLATIONS[currentLang].creditHoursLabel}`;
+      document.getElementById('pageIndicator').innerText = `${rank} / ${total}`;
+
+      document.getElementById('prevBtn').disabled = idx === 0;
+      document.getElementById('nextBtn').disabled = idx === total - 1;
+
+      const mandCodes = Object.keys(normalizedCourses).filter(c => {
+        const rad = document.querySelector(`input[name="state_${c}"]:checked`);
+        return rad && rad.value === 'mandatory';
+      });
+      const electives = sched.courseSet.filter(c => !mandCodes.includes(c)).map(c => getTranslatedCourseName(normalizedCourses[c].name));
+      document.getElementById('electivesBadge').innerText = electives.length > 0 ? `${TRANSLATIONS[currentLang].electivesLabel} ${electives.join(' + ')}` : TRANSLATIONS[currentLang].onlyMandatory;
+
+      renderProportionalCalendar(sched);
+      renderSectionsTable(sched);
+    }
+
+    function prevSchedule() {
+      if (currentIndex > 0) showSchedule(currentIndex - 1);
+    }
+
+    function nextSchedule() {
+      if (currentIndex < currentSchedules.length - 1 && currentIndex < 49) showSchedule(currentIndex + 1);
+    }
+
+    function renderProportionalCalendar(sched) {
+      const DAY_START_MIN = 480; 
+      const TOTAL_DAY_MINS = 600; 
+      const isDarkMode = document.documentElement.classList.contains('dark');
+
+      const byDay = {};
+      DAYS_MAP.ar.forEach(d => byDay[d] = []);
+
+      for (const sec of sched.sections) {
+        for (const slot of sec.slots) {
+          if (byDay[slot.day]) {
+            byDay[slot.day].push({
+              startMin: slot.startMin,
+              endMin: slot.endMin,
+              start: minutesToTime(slot.startMin),
+              end: minutesToTime(slot.endMin),
+              course: sec.courseName,
+              translatedCourse: getTranslatedCourseName(sec.courseName),
+              type: sec.type,
+              translatedType: getTranslatedType(sec.type),
+              crn: sec.sectionNumber,
+              instructor: sec.instructor,
+              translatedInstructor: getTranslatedInstructor(sec.instructor),
+              room: slot.room,
+              status: sec.status
+            });
+          }
+        }
+      }
+
+      let colorCounter = 0;
+      courseColorMap = {};
+      sched.sections.forEach(sec => {
+        if (!courseColorMap[sec.courseCode]) {
+          courseColorMap[sec.courseCode] = COURSE_COLORS[colorCounter % COURSE_COLORS.length];
+          colorCounter++;
+        }
+      });
+
+      DAYS_MAP.ar.forEach((dAr, dIdx) => {
+        const col = document.getElementById(`dayColumn_${dIdx}`);
+        const summary = document.getElementById(`daySummary_${dIdx}`);
+        const header = document.getElementById(`dayHeader_${dIdx}`);
+        col.innerHTML = '';
+
+        for (let l = 0; l < 10; l++) {
+          const line = document.createElement('div');
+          line.className = 'grid-hour-slot pointer-events-none';
+          col.appendChild(line);
+        }
+
+        const isOff = sched.daysOff.includes(dAr);
+        header.className = isOff 
+          ? 'text-center text-xs font-bold py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 mb-1.5' 
+          : 'text-center text-xs font-bold py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 mb-1.5';
+
+        const slots = byDay[dAr].sort((a, b) => a.startMin - b.startMin);
+
+        if (slots.length === 0) {
+          const offBanner = document.createElement('div');
+          offBanner.className = 'absolute inset-0 flex items-center justify-center font-bold text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50/40 dark:bg-emerald-950/20 rounded-xl';
+          offBanner.innerText = TRANSLATIONS[currentLang].dayOffText;
+          col.appendChild(offBanner);
+          summary.innerText = TRANSLATIONS[currentLang].dayOffText;
+          summary.className = 'mt-1.5 text-[10px] text-center font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 py-1 rounded border border-emerald-200 dark:border-emerald-800';
+        } else {
+          const firstStart = minutesToTime(slots[0].startMin);
+          const lastEnd = minutesToTime(slots[slots.length - 1].endMin);
+          summary.innerText = `${firstStart} → ${lastEnd}`;
+          summary.className = 'mt-1.5 text-[10px] text-center font-semibold text-slate-500 dark:text-slate-400 py-1 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 font-sans';
+
+          slots.forEach(slot => {
+            const topPct = ((slot.startMin - DAY_START_MIN) / TOTAL_DAY_MINS) * 100;
+            const heightPct = Math.max(8, ((slot.endMin - slot.startMin) / TOTAL_DAY_MINS) * 100);
+            const color = courseColorMap[slot.crn] || COURSE_COLORS[dIdx % COURSE_COLORS.length];
+
+            const card = document.createElement('div');
+            card.className = `lecture-card absolute inset-x-1 border border-s-4 rounded-lg p-1.5 z-20 overflow-hidden cursor-pointer flex flex-col justify-between shadow-2xs`;
+            card.style.top = `${topPct}%`;
+            card.style.height = `calc(${heightPct}% - 3px)`;
+            
+            const cardBg = isDarkMode ? color.darkBg : color.bg;
+            const cardBorder = isDarkMode ? color.darkBorder : color.border;
+            const cardText = isDarkMode ? color.darkText : color.text;
+
+            card.style.backgroundColor = cardBg;
+            card.style.borderColor = cardBorder;
+            card.title = `${slot.translatedCourse}\n${slot.translatedType} [${slot.crn}]\n${slot.translatedInstructor}\n${slot.start} - ${slot.end}\n${slot.room ? 'Room ' + slot.room : ''}`;
+
+            card.innerHTML = `
+              <div>
+                <div class="flex items-center justify-between text-[9px] font-bold font-sans" style="color: ${cardText}">
+                  <span>${slot.start}</span>
+                  <span class="opacity-80 font-mono">[${slot.crn}]</span>
+                </div>
+                <div class="text-[10px] font-bold leading-tight line-clamp-2 mt-0.5" style="color: ${cardText}">${slot.translatedCourse}</div>
+              </div>
+              <div class="flex items-center justify-between text-[9px] font-semibold opacity-90" style="color: ${cardText}">
+                <span>${slot.translatedType}</span>
+                ${slot.room ? `<span class="font-mono">${slot.room}</span>` : ''}
+              </div>
+            `;
+            col.appendChild(card);
+          });
+        }
+      });
+    }
+
+    function renderSectionsTable(sched) {
+      const tbody = document.getElementById('sectionsTableBody');
+      tbody.innerHTML = '';
+
+      for (const sec of sched.sections) {
+        const timesStr = sec.slots.map(s => {
+          const dIdx = DAYS_MAP.ar.indexOf(s.day);
+          const dName = currentLang === 'en' ? DAYS_MAP.en[dIdx] : s.day;
+          return `${dName} (${minutesToTime(s.startMin)}-${minutesToTime(s.endMin)})`;
+        }).join(' | ');
+
+        const rooms = [...new Set(sec.slots.map(s => s.room).filter(Boolean))].join(', ') || '—';
+        const isClosed = sec.status === 'مغلقة';
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 dark:hover:bg-slate-850/60 transition cursor-pointer';
+        tr.onclick = () => copySingleSection(sec);
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-mono font-bold text-blue-600 dark:text-blue-400">${sec.sectionNumber}</td>
+          <td class="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">${getTranslatedCourseName(sec.courseName)}</td>
+          <td class="py-2.5 px-3 text-slate-600 dark:text-slate-300">${getTranslatedType(sec.type)}</td>
+          <td class="py-2.5 px-3 text-slate-600 dark:text-slate-400">${getTranslatedInstructor(sec.instructor)}</td>
+          <td class="py-2.5 px-3">
+            <span class="inline-block text-[10px] px-2 py-0.5 rounded-full font-bold ${isClosed ? 'bg-rose-50 dark:bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30' : 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30'}">
+              ${getTranslatedStatus(sec.status)}
+            </span>
+          </td>
+          <td class="py-2.5 px-3 text-slate-600 dark:text-slate-400 text-[11px]">${timesStr}</td>
+          <td class="py-2.5 px-3 font-mono text-slate-700 dark:text-slate-300 font-semibold">${rooms}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 2500);
+    }
+
+    function copySingleSection(sec) {
+      const textToCopy = `${sec.sectionNumber} - ${getTranslatedCourseName(sec.courseName)} (${getTranslatedType(sec.type)})`;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast(currentLang === 'en' ? `Copied: ${textToCopy}` : `تم النسخ: ${textToCopy}`);
+      });
+    }
+
+    function copyCurrentCRNs() {
+      if (!currentSchedules[currentIndex]) return;
+      const lines = currentSchedules[currentIndex].sections.map(s => `${s.sectionNumber} - ${getTranslatedCourseName(s.courseName)} (${getTranslatedType(s.type)})`);
+      navigator.clipboard.writeText(lines.join('\n')).then(() => {
+        showToast(currentLang === 'en' ? 'All sections copied to clipboard!' : 'تم نسخ جميع الشعب والمقررات!');
+      });
+    }
+
+    function exportAsPNG() {
+      const el = document.getElementById('calendarSection');
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      showToast(currentLang === 'en' ? 'Generating PNG...' : 'جاري إنشاء الصورة...');
+      html2canvas(el, { scale: 2, backgroundColor: isDarkMode ? '#0f172a' : '#ffffff' }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `Schedule_${currentIndex + 1}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
+
+    function exportAsICS() {
+      if (!currentSchedules[currentIndex]) return;
+      const sched = currentSchedules[currentIndex];
+      const dayOffsets = { 'الأحد': 0, 'الاثنين': 1, 'الثلاثاء': 2, 'الأربعاء': 3, 'الخميس': 4 };
+      
+      const today = new Date();
+      const currentDayOfWeek = today.getDay();
+      const startSunday = new Date(today);
+      startSunday.setDate(today.getDate() - currentDayOfWeek);
+      startSunday.setHours(0, 0, 0, 0);
+
+      function getSlotFirstDate(dayAr) {
+        const offset = dayOffsets[dayAr] !== undefined ? dayOffsets[dayAr] : 0;
+        const d = new Date(startSunday);
+        d.setDate(startSunday.getDate() + offset);
+        return d;
+      }
+
+      function fmtICS(date, mins) {
+        const h = Math.floor(mins / 60), m = mins % 60;
+        const y = date.getFullYear();
+        const mo = String(date.getMonth() + 1).padStart(2, '0');
+        const dy = String(date.getDate()).padStart(2, '0');
+        return `${y}${mo}${dy}T${String(h).padStart(2, '0')}${String(m).padStart(2, '0')}00`;
+      }
+
+      let ics = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Jadwal Optimizer//EN\r\nCALSCALE:GREGORIAN\r\nX-WR-CALNAME:University Timetable\r\nX-WR-TIMEZONE:Asia/Riyadh\r\n';
+      
+      for (const sec of sched.sections) {
+        for (const slot of sec.slots) {
+          const dt = getSlotFirstDate(slot.day);
+          const uid = `${sec.sectionNumber}-${slot.day}-${slot.startMin}-${dt.getTime()}@jadwal`;
+          const courseTitle = getTranslatedCourseName(sec.courseName);
+          const sectionType = getTranslatedType(sec.type);
+          const instructorName = getTranslatedInstructor(sec.instructor);
+          const roomLocation = slot.room ? `Room ${slot.room}` : '';
+
+          ics += `BEGIN:VEVENT\r\nUID:${uid}\r\nDTSTART;TZID=Asia/Riyadh:${fmtICS(dt, slot.startMin)}\r\nDTEND;TZID=Asia/Riyadh:${fmtICS(dt, slot.endMin)}\r\nRRULE:FREQ=WEEKLY;COUNT=16\r\nSUMMARY:${courseTitle} (${sectionType})\r\nDESCRIPTION:CRN: ${sec.sectionNumber}\\nInstructor: ${instructorName}${roomLocation ? '\\n' + roomLocation : ''}\r\n${slot.room ? 'LOCATION:' + roomLocation + '\r\n' : ''}END:VEVENT\r\n`;
+        }
+      }
+      ics += 'END:VCALENDAR\r\n';
+
+      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+      const a = document.createElement('a');
+      a.download = `schedule_16weeks_${currentIndex + 1}.ics`;
+      a.href = URL.createObjectURL(blob);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast(currentLang === 'en' ? 'Calendar exported (16 weeks)' : 'تم تصدير ملف التقويم (16 أسبوع)');
+    }
+
+    function showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets) {
+      const modal = document.getElementById('diagModal');
+      let reasons = [];
+
+      for (const code of mandatoryCodes) {
+        const c = normalizedCourses[code];
+        const th = c.theory.filter(s => allowClosed || s.status === 'مفتوحة');
+        const pr = c.practical.filter(s => allowClosed || s.status === 'مفتوحة');
+        if (th.length === 0 || (c.practical.length > 0 && pr.length === 0)) {
+          reasons.push(currentLang === 'en' 
+            ? `Mandatory course <strong>${getTranslatedCourseName(c.name)}</strong> has no open sections.`
+            : `المقرر الإجباري <strong>${c.name}</strong> لا توجد له شُعب متاحة.`);
+        }
+      }
+
+      const mandHours = mandatoryCodes.reduce((sum, c) => sum + normalizedCourses[c].creditHours, 0);
+      const remainingHours = targetHours - mandHours;
+      const optCodes = Object.keys(normalizedCourses).filter(c => !mandatoryCodes.includes(c) && !excludedCodes.includes(c));
+      const maxPossible = mandHours + optCodes.reduce((s, c) => s + normalizedCourses[c].creditHours, 0);
+
+      if (targetHours > maxPossible) {
+        reasons.push(currentLang === 'en' 
+          ? `Requested hours (${targetHours} CR) exceed total available credits (${maxPossible} CR).`
+          : `عدد الساعات المطلوب (${targetHours}س) يتجاوز إجمالي الساعات المتاحة بعد الاستبعاد.`);
+      } else if (validSets.length === 0) {
+        reasons.push(currentLang === 'en'
+          ? `Available courses cannot sum up to exactly ${remainingHours} remaining credits.`
+          : `المقررات المتاحة لا يمكن أن تجمع ${remainingHours} ساعة إضافية بدقة.`);
+      } else if (reasons.length === 0) {
+        reasons.push(currentLang === 'en'
+          ? `Found <strong>${validSets.length} course sets</strong>, but 100% have direct timetable overlaps.`
+          : `تم العثور على <strong>${validSets.length} تشكيلة</strong>، ولكن جميع الشُعب المطروحة تتعارض زمنياً في نفس الساعات.`);
+      }
+
+      modal.innerHTML = `
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl max-w-md w-full p-5 text-start space-y-4 shadow-2xl transition-colors">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center justify-between">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900 dark:text-white">${currentLang === 'en' ? 'Unable to Generate Schedule' : 'تعذر إنشاء جدول بتلك الشروط'}</h3>
+              <p class="text-[11px] text-rose-600 dark:text-rose-400 font-semibold mt-0.5">${currentLang === 'en' ? `Target: ${targetHours} CR | Mandatory: ${mandatoryCodes.length}` : `الهدف: ${targetHours} ساعة | الإجباري: ${mandatoryCodes.length} مقرر`}</p>
+            </div>
+          </div>
+
+          <div class="bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 rounded-xl p-3 text-xs">
+            <div class="font-bold text-rose-800 dark:text-rose-300 mb-1">${currentLang === 'en' ? 'Reasons:' : 'السبب:'}</div>
+            <ul class="list-disc list-inside space-y-1 text-slate-700 dark:text-slate-300 leading-relaxed">
+              ${reasons.map(r => `<li>${r}</li>`).join('')}
+            </ul>
+          </div>
+
+          <div class="space-y-1.5 text-xs">
+            <div class="font-bold text-slate-800 dark:text-slate-200">${currentLang === 'en' ? 'Suggested Targets:' : 'ساعات بديلة مقترحة:'}</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button onclick="setHoursAndRegenerate(22)" class="bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-600/50 font-bold px-2.5 py-1 rounded-lg transition text-xs font-sans">${currentLang === 'en' ? '22 Credits (101 sets)' : '22 ساعة (101 جدول)'}</button>
+              <button onclick="setHoursAndRegenerate(20)" class="bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-600/50 font-bold px-2.5 py-1 rounded-lg transition text-xs font-sans">${currentLang === 'en' ? '20 Credits (270 sets)' : '20 ساعة (270 جدول)'}</button>
+              <button onclick="setHoursAndRegenerate(19)" class="bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-600/50 font-bold px-2.5 py-1 rounded-lg transition text-xs font-sans">${currentLang === 'en' ? '19 Credits (364 sets)' : '19 ساعة (364 جدول)'}</button>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-2">
+            <button onclick="document.getElementById('diagModal').classList.add('hidden')" class="bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition border border-transparent dark:border-slate-700">
+              ${currentLang === 'en' ? 'Close' : 'إغلاق'}
+            </button>
+          </div>
+        </div>
+      `;
+      modal.classList.remove('hidden');
+    }
+
+    function setHoursAndRegenerate(h) {
+      document.getElementById('hoursSlider').value = h;
+      updateHoursDisplay(h);
+      document.getElementById('diagModal').classList.add('hidden');
+      generateTop50Schedules();
+    }
+
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        try {
+          const parsed = JSON.parse(ev.target.result);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rawData = parsed;
+            localStorage.setItem('jadwal_saved_data', JSON.stringify(rawData));
+            normalizedCourses = normalizeDataset(rawData);
+            renderCoursesList();
+            generateTop50Schedules();
+            showToast(currentLang === 'en' ? 'JSON file loaded successfully' : 'تم تحميل ملف البيانات بنجاح');
+          }
+        } catch (err) {
+          alert("Error parsing JSON: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function initDataset() {
+      // 1. Check URL query/hash parameter
+      try {
+        let rawParam = '';
+        if (window.location.hash && window.location.hash.includes('data=')) {
+          rawParam = window.location.hash.split('data=')[1];
+        } else if (window.location.search && window.location.search.includes('data=')) {
+          const urlParams = new URLSearchParams(window.location.search);
+          rawParam = urlParams.get('data');
+        }
+
+        if (rawParam) {
+          const parsed = JSON.parse(decodeURIComponent(rawParam));
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            rawData = parsed;
+            localStorage.setItem('jadwal_saved_data', JSON.stringify(rawData));
+            window.history.replaceState(null, null, window.location.pathname);
+          }
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+
+      // 2. Check local storage if no URL parameter
+      if (rawData === DEFAULT_RAW_DATA) {
+        try {
+          const saved = localStorage.getItem('jadwal_saved_data');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) rawData = parsed;
+          }
+        } catch (e) {}
+      }
+
+      normalizedCourses = normalizeDataset(rawData);
+      renderCoursesList();
+      generateTop50Schedules();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.key === 'ArrowRight') {
+        if (currentLang === 'ar') prevSchedule();
+        else nextSchedule();
+      } else if (e.key === 'ArrowLeft') {
+        if (currentLang === 'ar') nextSchedule();
+        else prevSchedule();
+      }
+    });
+
+    function getBookmarkletCode() {
+      const appUrl = window.location.href.split('#')[0].split('?')[0];
+      return `javascript:(async function(){const JADWAL_URL="${appUrl}";const hasTable=document.querySelector('[id*=":offeredCoursesTable"]')||document.querySelector('[id*="offeredCourses"]');if(!hasTable&&!document.querySelector('.ui-datatable')){alert("يرجى فتح صفحة (المقررات المطروحة وفق الخطة) بالبوابة أولاً ثم الضغط على هذا الزر.");return;}const toast=document.createElement('div');toast.style.cssText="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#ffffff;padding:12px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:999999;font-family:sans-serif;font-size:13px;font-weight:bold;direction:rtl;border:1px solid #3b82f6;";toast.innerHTML="جاري استخراج المقررات والشعب تلقائياً... ⏳";document.body.appendChild(toast);function parseSectionTime(raw){if(!raw)return[{note:'بالإتفاق'}];return raw.split("@n").filter(Boolean).map(slot=>{const[dayTime,room]=slot.split("@r");const[day,time]=dayTime.split("@t");return{day:day?day.trim():'',time:time?time.trim():'',room:room?room.trim():''};});}function scrapeCurrentPage(){const results=[];const sectionInputs=document.querySelectorAll('[id*=":offeredCoursesTable:"][id$=":section"]');sectionInputs.forEach(input=>{const index=input.id.split(':')[2];const instructorEl=document.getElementById(\`myForm:offeredCoursesTable:\${index}:instructor\`);const examEl=document.getElementById(\`myForm:offeredCoursesTable:\${index}:examPeriod\`);const row=input.closest('tr');const cells=row?Array.from(row.querySelectorAll('td')).map(c=>c.innerText.trim()):[];results.push({course_code:cells[0]||'',course_name:cells[1]||'',section_number:cells[2]||'',type:cells[3]||'نظري',sub_sections_count:cells[4]||'1',status:cells[5]||'مفتوحة',instructor:instructorEl?instructorEl.innerText.trim():(cells[6]||''),exam_period:examEl?examEl.innerText.trim():(cells[7]||''),slots:parseSectionTime(input.value)});});return results;}function waitForTableReload(){return new Promise(resolve=>{const table=document.querySelector('[id*=":offeredCoursesTable"]')||document.body;const obs=new MutationObserver((mutations,observer)=>{observer.disconnect();setTimeout(resolve,600);});obs.observe(table,{childList:true,subtree:true});});}let all=[];const pages=Array.from(document.querySelectorAll('.ui-paginator-page'));if(pages.length===0){all=scrapeCurrentPage();}else{for(let i=0;i<pages.length;i++){toast.innerHTML=\`جاري قراءة الصفحة (\${i+1} من \${pages.length})... ⏳\`;const currentPages=Array.from(document.querySelectorAll('.ui-paginator-page'));if(currentPages[i]){currentPages[i].click();await waitForTableReload();all.push(...scrapeCurrentPage());}}}const seen=new Set();const unique=all.filter(s=>{const k=\`\${s.course_code}_\${s.section_number}\`;if(seen.has(k))return false;seen.add(k);return true;});toast.innerHTML=\`تم استخراج \${unique.length} شعبة بنجاح! جاري فتح الجدول... 🚀\`;setTimeout(()=>{const p=encodeURIComponent(JSON.stringify(unique));window.open(\`\${JADWAL_URL}#data=\${p}\`,'_blank');toast.remove();},700);})();`;
+    }
+
+    function openBookmarkletModal() {
+      const modal = document.getElementById('bmModal');
+      const anchor = document.getElementById('bmDraggableLink');
+      if (anchor) {
+        anchor.href = getBookmarkletCode();
+      }
+      modal.classList.remove('hidden');
+    }
+
+    function closeBookmarkletModal() {
+      document.getElementById('bmModal').classList.add('hidden');
+    }
+
+    function copyBookmarkletCode() {
+      const code = getBookmarkletCode();
+      navigator.clipboard.writeText(code).then(() => {
+        showToast(currentLang === 'en' ? 'Bookmarklet code copied!' : 'تم نسخ كود البوكمارك بنجاح!');
+      });
+    }
+
+    window.onload = () => {
+      initTheme();
+      initDataset();
+      const anchor = document.getElementById('bmDraggableLink');
+      if (anchor) anchor.href = getBookmarkletCode();
+    };
+  </script>
+</body>
+</html>
+
