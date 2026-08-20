@@ -1108,7 +1108,7 @@
         }
       }
 
-      return { daysOff, daysOffCount: daysOff.length, totalGaps, totalLateMinutes, sections };
+      return { daysOff, daysOffCount: daysOff.length, totalGaps, totalLateMinutes, sections: [...sections] };
     }
 
     function getCombinations(arr, k) {
