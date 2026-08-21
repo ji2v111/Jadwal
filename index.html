@@ -127,7 +127,7 @@
           <!-- Sun Icon (shown in dark mode) -->
           <svg id="themeIconSun" class="w-4 h-4 text-amber-400 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="12" x2="12" y2="3"></line>
             <line x1="12" y1="21" x2="12" y2="23"></line>
             <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
             <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
@@ -199,12 +199,18 @@
           <!-- Sorting Mode Tabs -->
           <div class="space-y-1.5">
             <label class="block text-xs font-bold text-slate-600 dark:text-slate-400" data-i18n="sortModeLabel">أولوية الترتيب:</label>
-            <div class="grid grid-cols-2 gap-2 text-xs font-bold">
-              <button onclick="setSortMode('days_off')" id="sortBtn_days_off" class="sort-btn py-2 px-3 rounded-xl border border-blue-500 dark:border-blue-500/50 bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-blue-300 text-center transition shadow-2xs">
+            <div class="grid grid-cols-2 gap-1.5 text-[11px] font-bold">
+              <button onclick="setSortMode('days_off')" id="sortBtn_days_off" class="sort-btn py-1.5 px-2 rounded-lg border border-blue-500 dark:border-blue-500/50 bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-blue-300 text-center transition shadow-2xs">
                 <span data-i18n="sortDaysOff">أقصى أيام فراغ</span>
               </button>
-              <button onclick="setSortMode('min_gaps')" id="sortBtn_min_gaps" class="sort-btn py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+              <button onclick="setSortMode('min_gaps')" id="sortBtn_min_gaps" class="sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
                 <span data-i18n="sortMinGaps">أقل فترات انتظار</span>
+              </button>
+              <button onclick="setSortMode('early_exit')" id="sortBtn_early_exit" class="sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span data-i18n="sortEarlyExit">انتهاء مبكر</span>
+              </button>
+              <button onclick="setSortMode('evening')" id="sortBtn_evening" class="sort-btn py-1.5 px-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-center hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span data-i18n="sortEvening">فترات مسائية</span>
               </button>
             </div>
           </div>
@@ -226,7 +232,7 @@
           </div>
 
           <!-- Generate Button -->
-          <button onclick="handleGenerateButtonClick()" id="generateSchedulesBtn" class="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs shadow-md shadow-blue-500/20 cursor-pointer">
+          <button onclick="generateTop50Schedules()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-xs shadow-md shadow-blue-500/20">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
             <span data-i18n="generateBtn">تحديث الجداول المقترحة</span>
           </button>
@@ -256,26 +262,18 @@
             </div>
           </div>
 
-          <!-- Pagination, Direct Input & Schedule Selector -->
+          <!-- Pagination & Schedule Selector -->
           <div class="flex items-center gap-2 flex-wrap">
-            <button onclick="prevSchedule()" id="prevBtn" title="الجدول السابق (←)" class="bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-900/30 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-1.5 rounded-lg text-xs font-bold transition border border-slate-200 dark:border-slate-700 disabled:opacity-30 disabled:pointer-events-none shadow-2xs flex items-center gap-1.5">
+            <button onclick="prevSchedule()" id="prevBtn" title="الجدول السابق" class="bg-slate-100 hover:bg-blue-50 dark:bg-slate-800 dark:hover:bg-blue-900/30 text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-1.5 rounded-lg text-xs font-bold transition border border-slate-200 dark:border-slate-700 disabled:opacity-30 disabled:pointer-events-none shadow-2xs flex items-center gap-1.5">
               <svg class="w-3.5 h-3.5 rtl:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
               <span data-i18n="prevBtnText">السابق</span>
             </button>
 
-            <!-- Direct Number Input -->
-            <div class="flex items-center gap-1 bg-slate-50 dark:bg-slate-850 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 shadow-2xs">
-              <span class="text-xs font-bold text-slate-400">#</span>
-              <input type="number" id="scheduleNumberInput" min="1" max="1000" value="1" onchange="jumpToScheduleNumber(parseInt(this.value))" onkeydown="if(event.key==='Enter') jumpToScheduleNumber(parseInt(this.value))" class="w-12 bg-transparent text-xs font-extrabold text-blue-600 dark:text-blue-400 focus:outline-none text-center font-sans">
-              <span id="scheduleTotalCountDisplay" class="text-xs text-slate-400 font-sans">/ 0</span>
-            </div>
-
-            <!-- Dropdown Selector -->
-            <select id="scheduleSelect" onchange="showSchedule(parseInt(this.value))" class="bg-slate-50 dark:bg-slate-850 text-xs font-bold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500 font-sans cursor-pointer max-w-[200px] truncate">
+            <select id="scheduleSelect" onchange="showSchedule(parseInt(this.value))" class="bg-slate-50 dark:bg-slate-850 text-xs font-bold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500 font-sans cursor-pointer">
               <option value="0">0 / 0</option>
             </select>
 
-            <button onclick="nextSchedule()" id="nextBtn" title="الجدول التالي (→)" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-30 disabled:pointer-events-none shadow-sm shadow-blue-500/20 flex items-center gap-1.5">
+            <button onclick="nextSchedule()" id="nextBtn" title="الجدول التالي" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-30 disabled:pointer-events-none shadow-sm shadow-blue-500/20 flex items-center gap-1.5">
               <span data-i18n="nextBtnText">التالي</span>
               <svg class="w-3.5 h-3.5 rtl:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </button>
@@ -662,7 +660,6 @@
     let rawData = DEFAULT_RAW_DATA;
     let normalizedCourses = {};
     let currentSchedules = [];
-    let rawCombinationBuckets = [];
     let currentIndex = 0;
     let currentSortMode = 'days_off';
     let courseColorMap = {};
@@ -955,7 +952,7 @@
 
       if (codes.length === 0) {
         container.innerHTML = `
-          <div class="py-8 px-4 text-center text-slate-400 dark:text-slate-500 space-y-2 bg-slate-50/50 dark:bg-slate-850/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+          <div class="py-8 px-4 text-center text-slate-400 dark:text-slate-500 space-y-2 bg-slate-50/50 dark:bg-slate-855/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
             <svg class="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             <p class="text-xs font-bold text-slate-700 dark:text-slate-300">${currentLang === 'en' ? 'No courses loaded yet' : 'لا توجد مقررات محملة بعد'}</p>
             <p class="text-[11px] text-slate-400 dark:text-slate-500">${currentLang === 'en' ? 'Use the Import Courses button above or upload JSON to start' : 'استخدم زر سحب المقررات بالأعلى أو ارفع ملف JSON للبدء'}</p>
@@ -1092,8 +1089,7 @@
       return result;
     }
 
-    function generateTop50Schedules(isUserClick = false) {
-      rawCombinationBuckets = [];
+    function generateTop50Schedules() {
       if (Object.keys(normalizedCourses).length === 0) {
         currentSchedules = [];
         showSchedule(0);
@@ -1193,28 +1189,29 @@
         // MRV Heuristic: Sort courses with fewest units first for instant branch pruning
         courseOptions.sort((a, b) => a.length - b.length);
 
-        const MAX_PER_SET = validSets.length <= 5 ? 2000 : (validSets.length <= 50 ? 500 : 100);
-        const MAX_ITER_PER_SET = 30000;
-
+        // Fast DFS traversal of course units
         const currentStack = [];
-        const foundInSet = [];
+        let foundInSet = 0;
         let iterInSet = 0;
+        const MAX_PER_SET = 25;
+        const MAX_ITER_PER_SET = 2000;
 
         function dfs(courseIdx) {
-          if (foundInSet.length >= MAX_PER_SET || iterInSet >= MAX_ITER_PER_SET) return;
+          if (foundInSet >= MAX_PER_SET || iterInSet >= MAX_ITER_PER_SET) return;
           if (courseIdx === courseOptions.length) {
             const flat = currentStack.flat();
             const evalRes = evaluateSchedule(flat);
             evalRes.courseSet = cSet;
             evalRes.totalHours = item.hours;
-            foundInSet.push(evalRes);
+            validSchedules.push(evalRes);
+            foundInSet++;
             return;
           }
 
           const units = courseOptions[courseIdx];
           for (const unit of units) {
             iterInSet++;
-            if (iterInSet >= MAX_ITER_PER_SET || foundInSet.length >= MAX_PER_SET) break;
+            if (iterInSet >= MAX_ITER_PER_SET || foundInSet >= MAX_PER_SET) break;
 
             let conflict = false;
             for (const placedUnit of currentStack) {
@@ -1239,13 +1236,9 @@
         }
 
         dfs(0);
-
-        if (foundInSet.length > 0) {
-          rawCombinationBuckets.push(foundInSet);
-        }
       }
 
-      if (rawCombinationBuckets.length === 0) {
+      if (validSchedules.length === 0) {
         showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets.map(v => v.set));
         return;
       }
@@ -1254,95 +1247,44 @@
       const diagEl = document.getElementById('diagModal');
       if (diagEl) diagEl.classList.add('hidden');
 
-      sortAndRefreshSchedules(isUserClick);
+      currentSchedules = validSchedules;
+      sortAndRefreshSchedules();
     }
 
-    function courseDistance(setA, setB) {
-      const union = new Set([...setA, ...setB]);
-      let intersection = 0;
-      for (const c of setA) {
-        if (setB.includes(c)) intersection++;
-      }
-      return 1 - (intersection / union.size);
-    }
-
-    function sortAndRefreshSchedules(isUserClick = false) {
-      if (!rawCombinationBuckets || rawCombinationBuckets.length === 0) {
-        currentSchedules = [];
+    function sortAndRefreshSchedules() {
+      if (!currentSchedules || currentSchedules.length === 0) {
         showSchedule(0);
         return;
       }
 
-      // 1. Sort internal schedules inside each course combination bucket
-      for (const bucket of rawCombinationBuckets) {
-        if (currentSortMode === 'days_off') {
-          bucket.sort((a, b) => b.daysOffCount !== a.daysOffCount ? b.daysOffCount - a.daysOffCount : a.totalGaps - b.totalGaps);
-        } else {
-          bucket.sort((a, b) => a.totalGaps !== b.totalGaps ? a.totalGaps - b.totalGaps : b.daysOffCount - a.daysOffCount);
-        }
+      if (currentSortMode === 'days_off') {
+        currentSchedules.sort((a, b) => {
+          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
+          if (a.totalGaps !== b.totalGaps) return a.totalGaps - b.totalGaps;
+          return a.totalLateMinutes - b.totalLateMinutes;
+        });
+      } else if (currentSortMode === 'min_gaps') {
+        currentSchedules.sort((a, b) => {
+          if (a.totalGaps !== b.totalGaps) return a.totalGaps - b.totalGaps;
+          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
+          return a.totalLateMinutes - b.totalLateMinutes;
+        });
+      } else if (currentSortMode === 'early_exit') {
+        currentSchedules.sort((a, b) => {
+          if (a.totalLateMinutes !== b.totalLateMinutes) return a.totalLateMinutes - b.totalLateMinutes;
+          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
+          return a.totalGaps - b.totalGaps;
+        });
+      } else if (currentSortMode === 'evening') {
+        currentSchedules.sort((a, b) => {
+          if (b.totalLateMinutes !== a.totalLateMinutes) return b.totalLateMinutes - a.totalLateMinutes;
+          if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
+          return a.totalGaps - b.totalGaps;
+        });
       }
 
-      // 2. Extract best candidate from each combination bucket and rank by quality
-      const candidates = rawCombinationBuckets.map(b => b[0]);
-      candidates.sort((a, b) => {
-        if (currentSortMode === 'days_off') {
-          return b.daysOffCount !== a.daysOffCount ? b.daysOffCount - a.daysOffCount : a.totalGaps - b.totalGaps;
-        } else {
-          return a.totalGaps !== b.totalGaps ? a.totalGaps - b.totalGaps : b.daysOffCount - a.daysOffCount;
-        }
-      });
-
-      // 3. MMR (Maximal Marginal Relevance) Re-ranking to maximize course diversity between consecutive schedules
-      const mmrSelected = [];
-      const remainingPool = [...candidates];
-      if (remainingPool.length > 0) {
-        mmrSelected.push(remainingPool.shift());
-      }
-
-      const targetTotal = Math.min(1000, candidates.length);
-      while (mmrSelected.length < targetTotal && remainingPool.length > 0) {
-        const windowSize = Math.min(40, remainingPool.length);
-        let bestIdx = 0;
-        let maxScore = -999999;
-
-        for (let i = 0; i < windowSize; i++) {
-          const cand = remainingPool[i];
-          let minDist = 1.0;
-          const checkCount = Math.min(6, mmrSelected.length);
-          for (let k = mmrSelected.length - checkCount; k < mmrSelected.length; k++) {
-            const dist = courseDistance(cand.courseSet, mmrSelected[k].courseSet);
-            if (dist < minDist) minDist = dist;
-          }
-
-          // Combined score: Quality + Diversity
-          const score = (minDist * 12) - (i * 0.15);
-          if (score > maxScore) {
-            maxScore = score;
-            bestIdx = i;
-          }
-        }
-
-        mmrSelected.push(remainingPool.splice(bestIdx, 1)[0]);
-      }
-
-      // Fill remainder with secondary section variations if pool was smaller than 1000
-      if (mmrSelected.length < 1000) {
-        for (const bucket of rawCombinationBuckets) {
-          for (let i = 1; i < bucket.length; i++) {
-            mmrSelected.push(bucket[i]);
-            if (mmrSelected.length >= 1000) break;
-          }
-          if (mmrSelected.length >= 1000) break;
-        }
-      }
-
-      currentSchedules = mmrSelected;
       currentIndex = 0;
       showSchedule(0);
-
-      if (isUserClick) {
-        showToast(currentLang === 'en' ? `Generated ${currentSchedules.length} diverse schedules!` : `تم توليد وتنسيق ${currentSchedules.length} جدولاً متنوعاً بنجاح! 🚀`);
-      }
     }
 
     function showSchedule(idx) {
@@ -1373,20 +1315,10 @@
       currentIndex = idx;
       const sched = currentSchedules[idx];
       const rank = idx + 1;
-      const total = currentSchedules.length;
+      const total = Math.min(50, currentSchedules.length);
 
       document.getElementById('rankBadgeText').innerText = `#${rank}`;
       
-      const numInput = document.getElementById('scheduleNumberInput');
-      if (numInput) {
-        numInput.value = rank;
-        numInput.max = total;
-      }
-      const totalDisplay = document.getElementById('scheduleTotalCountDisplay');
-      if (totalDisplay) {
-        totalDisplay.innerText = `/ ${total}`;
-      }
-
       const offDaysTranslated = sched.daysOff.map(d => {
         const dayIdx = DAYS_MAP.ar.indexOf(d);
         return currentLang === 'en' ? DAYS_MAP.en[dayIdx] : d;
@@ -1395,19 +1327,16 @@
       document.getElementById('gapSummaryText').innerText = `${TRANSLATIONS[currentLang].gapsLabel} ${(sched.totalGaps / 60).toFixed(1)} ${currentLang === 'ar' ? 'ساعة' : 'hrs'} • ${sched.totalHours} ${TRANSLATIONS[currentLang].creditHoursLabel}`;
 
       if (sel) {
-        if (sel.options.length !== Math.min(1000, total)) {
-          sel.innerHTML = '';
-          const maxOpts = Math.min(1000, total);
-          for (let i = 0; i < maxOpts; i++) {
-            const opt = document.createElement('option');
-            opt.value = i;
-            const s = currentSchedules[i];
-            const offCount = s.daysOff ? s.daysOff.length : 0;
-            opt.text = `${currentLang === 'ar' ? 'جدول' : 'Schedule'} #${i + 1} (${offCount} ${currentLang === 'ar' ? 'أيام فراغ' : 'off'} • ${(s.totalGaps / 60).toFixed(1)}h)`;
-            sel.appendChild(opt);
-          }
+        sel.innerHTML = '';
+        for (let i = 0; i < total; i++) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.selected = (i === idx);
+          const s = currentSchedules[i];
+          const offCount = s.daysOff ? s.daysOff.length : 0;
+          opt.text = `${currentLang === 'ar' ? 'جدول' : 'Schedule'} #${i + 1} (${offCount} ${currentLang === 'ar' ? 'أيام فراغ' : 'off'} • ${(s.totalGaps / 60).toFixed(1)}h)`;
+          sel.appendChild(opt);
         }
-        sel.value = idx;
       }
 
       document.getElementById('prevBtn').disabled = idx === 0;
@@ -1424,45 +1353,18 @@
       renderSectionsTable(sched);
     }
 
-    function jumpToScheduleNumber(num) {
-      if (isNaN(num) || !currentSchedules || currentSchedules.length === 0) return;
-      const targetIdx = Math.max(0, Math.min(currentSchedules.length - 1, num - 1));
-      showSchedule(targetIdx);
-    }
-
     function prevSchedule() {
       if (currentIndex > 0) showSchedule(currentIndex - 1);
     }
 
     function nextSchedule() {
-      if (currentIndex < currentSchedules.length - 1) showSchedule(currentIndex + 1);
-    }
-
-    function handleGenerateButtonClick() {
-      const btn = document.getElementById('generateSchedulesBtn');
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = `<svg class="w-4 h-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2.5"></path></svg> <span>${currentLang === 'en' ? 'Calculating...' : 'جاري التحديث...'}</span>`;
-        setTimeout(() => {
-          generateTop50Schedules(true);
-          btn.disabled = false;
-          btn.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg> <span>${TRANSLATIONS[currentLang].generateBtn || (currentLang === 'en' ? 'Update Schedules' : 'تحديث الجداول المقترحة')}</span>`;
-        }, 150);
-      } else {
-        generateTop50Schedules(true);
-      }
+      if (currentIndex < currentSchedules.length - 1 && currentIndex < 49) showSchedule(currentIndex + 1);
     }
 
     function renderProportionalCalendar(sched) {
       const DAY_START_MIN = 480; 
       const TOTAL_DAY_MINS = 600; 
       const isDarkMode = document.documentElement.classList.contains('dark');
-
-      const calEl = document.getElementById('calendarDaysContainer');
-      if (calEl) {
-        calEl.style.opacity = '0.7';
-        setTimeout(() => { calEl.style.opacity = '1'; }, 100);
-      }
 
       const byDay = {};
       DAYS_MAP.ar.forEach(d => byDay[d] = []);
@@ -1575,7 +1477,7 @@
                   <span class="opacity-80 font-mono">[${slot.crn}]</span>
                 </div>
                 <div class="text-[10px] font-bold leading-tight line-clamp-2 mt-0.5" style="color: ${cardText}">${slot.translatedCourse}</div>
-                ${slot.translatedInstructor && slot.translatedInstructor !== 'لم يحدد من الكلية' && slot.translatedInstructor !== 'Not assigned' ? `<div class="text-[9px] opacity-85 truncate mt-0.5" style="color: ${cardText}">👨‍🏫 ${slot.translatedInstructor}</div>` : ''}
+                ${slot.translatedInstructor && slot.translatedInstructor !== 'لم يحدد من الكلية' && slot.translatedInstructor !== 'Not assigned' ? `<div class="text-[9px] opacity-85 truncate mt-0.5" style="color: ${cardText}">👨🏫 ${slot.translatedInstructor}</div>` : ''}
               </div>
               <div class="flex items-center justify-between text-[9px] font-semibold opacity-90" style="color: ${cardText}">
                 <span>${slot.translatedType}</span>
@@ -1916,28 +1818,19 @@
     }
 
     window.addEventListener('keydown', (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (e.target.tagName === 'INPUT') return;
       if (e.key === 'ArrowRight') {
         if (currentLang === 'ar') prevSchedule();
         else nextSchedule();
       } else if (e.key === 'ArrowLeft') {
         if (currentLang === 'ar') nextSchedule();
         else prevSchedule();
-      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-        jumpToScheduleNumber(Math.max(1, currentIndex + 1 - 10));
-      } else if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-        jumpToScheduleNumber(Math.min(currentSchedules.length, currentIndex + 1 + 10));
-      } else if (e.key === 'Home') {
-        jumpToScheduleNumber(1);
-      } else if (e.key === 'End') {
-        jumpToScheduleNumber(currentSchedules.length);
       }
     });
 
     function getBookmarkletCode() {
       const appUrl = window.location.href.split('#')[0].split('?')[0];
-      const jsUrl = appUrl.endsWith('/') ? appUrl + 'bookmarklet.js' : appUrl + '/bookmarklet.js';
-      return `javascript:(function(){const s=document.createElement('script');s.src='${jsUrl}?v='+Date.now();document.body.appendChild(s);})();`;
+      return `javascript:(async function(){const JADWAL_URL="${appUrl}";const hasTable=document.querySelector('[id*=":offeredCoursesTable"]')||document.querySelector('[id*="offeredCourses"]')||document.querySelector('table');if(!hasTable&&!document.querySelector('.ui-datatable')){alert("يرجى فتح صفحة (المقررات المطروحة وفق الخطة) بالبوابة أولاً ثم الضغط على هذا الزر.");return;}const toast=document.createElement('div');toast.style.cssText="position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#ffffff;padding:12px 24px;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.5);z-index:999999;font-family:sans-serif;font-size:13px;font-weight:bold;direction:rtl;border:1px solid #3b82f6;";toast.innerHTML="جاري استخراج المقررات والشعب تلقائياً... ⏳";document.body.appendChild(toast);function parseSectionTime(raw){if(!raw)return[{note:'بالإتفاق'}];return raw.split("@n").filter(Boolean).map(slot=>{const[dayTime,room]=slot.split("@r");const[day,time]=dayTime.split("@t");return{day:day?day.trim():'',time:time?time.trim():'',room:room?room.trim():''};});}function scrapeCurrentPage(){const results=[];const table=document.querySelector('[id*=":offeredCoursesTable"]')||document.querySelector('table');const headers=table?Array.from(table.querySelectorAll('thead th, tr:first-child th, tr:first-child td')).map(th=>th.innerText.trim().toLowerCase()):[];let colCode=-1,colName=-1,colSec=-1,colType=-1,colHours=-1,colStatus=-1,colInst=-1;headers.forEach((h,i)=>{if(h.includes('رمز')||h.includes('كود')||h.includes('code'))colCode=i;else if(h.includes('اسم')||h.includes('مقرر')||h.includes('title')||h.includes('name'))colName=i;else if(h.includes('شعبة')||h.includes('رقم')||h.includes('sec')||h.includes('crn'))colSec=i;else if(h.includes('نوع')||h.includes('نشاط')||h.includes('type'))colType=i;else if(h.includes('ساعات')||h.includes('معتمدة')||h.includes('hour')||h.includes('cr'))colHours=i;else if(h.includes('حالة')||h.includes('status'))colStatus=i;else if(h.includes('محاضر')||h.includes('استاذ')||h.includes('أستاذ')||h.includes('مدرس')||h.includes('تدريس')||h.includes('instructor')||h.includes('faculty')||h.includes('teacher'))colInst=i;});const sectionInputs=document.querySelectorAll('[id*=":offeredCoursesTable:"][id$=":section"]');if(sectionInputs.length>0){sectionInputs.forEach(input=>{const index=input.id.split(':')[2];const row=input.closest('tr');const cells=row?Array.from(row.querySelectorAll('td')).map(c=>c.innerText.trim()):[];const instEl=row?(row.querySelector('[id*=":instructor"]')||row.querySelector('[id*="instructor"]')||row.querySelector('[id*="faculty"]')||row.querySelector('[id*="teacher"]')||row.querySelector('[id*="staff"]')):null;let instName='';if(instEl&&instEl.innerText.trim())instName=instEl.innerText.trim();else if(colInst!==-1&&cells[colInst])instName=cells[colInst];else if(cells[6]&&!cells[6].match(/^[0-9]+$/))instName=cells[6];const examEl=row?row.querySelector('[id*="examPeriod"]'):null;const rawHours=colHours!==-1?cells[colHours]:'';const parsedHours=parseInt(rawHours)||'';results.push({course_code:(colCode!==-1?cells[colCode]:cells[0])||'',course_name:(colName!==-1?cells[colName]:cells[1])||'',section_number:(colSec!==-1?cells[colSec]:cells[2])||'',type:(colType!==-1?cells[colType]:cells[3])||'نظري',credit_hours:(parsedHours>=1&&parsedHours<=8)?parsedHours:'',sub_sections_count:cells[4]||'',status:(colStatus!==-1?cells[colStatus]:cells[5])||'مفتوحة',instructor:instName,exam_period:examEl?examEl.innerText.trim():(cells[7]||''),slots:parseSectionTime(input.value)});});}else{const rows=document.querySelectorAll('table tbody tr');rows.forEach(row=>{const cells=Array.from(row.querySelectorAll('td')).map(c=>c.innerText.trim());if(cells.length>=4){const rawHours=colHours!==-1?cells[colHours]:'';const parsedHours=parseInt(rawHours)||'';let instName='';if(colInst!==-1&&cells[colInst])instName=cells[colInst];else if(cells[6]&&!cells[6].match(/^[0-9]+$/))instName=cells[6];results.push({course_code:(colCode!==-1?cells[colCode]:cells[0])||'',course_name:(colName!==-1?cells[colName]:cells[1])||'',section_number:(colSec!==-1?cells[colSec]:cells[2])||'',type:(colType!==-1?cells[colType]:cells[3])||'نظري',credit_hours:(parsedHours>=1&&parsedHours<=8)?parsedHours:'',status:(colStatus!==-1?cells[colStatus]:cells[5])||'مفتوحة',instructor:instName,slots:[]});}});}return results;}function waitForTableReload(){return new Promise(resolve=>{const table=document.querySelector('[id*=":offeredCoursesTable"]')||document.body;const obs=new MutationObserver((mutations,observer)=>{observer.disconnect();setTimeout(resolve,600);});obs.observe(table,{childList:true,subtree:true});});}let all=[];const pages=Array.from(document.querySelectorAll('.ui-paginator-page'));if(pages.length===0){all=scrapeCurrentPage();}else{for(let i=0;i<pages.length;i++){toast.innerHTML=\`جاري قراءة الصفحة (\${i+1} من \${pages.length})... ⏳\`;const currentPages=Array.from(document.querySelectorAll('.ui-paginator-page'));if(currentPages[i]){currentPages[i].click();await waitForTableReload();all.push(...scrapeCurrentPage());}}}const seen=new Set();const unique=all.filter(s=>{const k=\`\${s.course_code}_\${s.section_number}\`;if(seen.has(k))return false;seen.add(k);return true;});toast.innerHTML=\`تم استخراج \${unique.length} شعبة بنجاح! جاري فتح الجدول... 🚀\`;setTimeout(()=>{const p=encodeURIComponent(JSON.stringify(unique));window.open(\`\${JADWAL_URL}#data=\${p}\`,'_blank');toast.remove();},700);})();`;
     }
 
     function openBookmarkletModal() {
@@ -1969,4 +1862,3 @@
   </script>
 </body>
 </html>
-
