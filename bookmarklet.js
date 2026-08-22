@@ -1,9 +1,78 @@
 // =========================================================================
 // JADWAL - أداة سحب المقررات التلقائية الشاملة من بوابات الجامعات
+// v3.0 - تنظيف وتجميع البيانات تلقائياً (نفس clean_sections.py)
 // =========================================================================
 
 (async function() {
   const JADWAL_APP_URL = "https://ji2v111.github.io/Jadwal/";
+
+  // ===== خريطة أيام الأسبوع =====
+  const DAY_NAMES = {
+    "1": "الأحد", "2": "الاثنين", "3": "الثلاثاء",
+    "4": "الأربعاء", "5": "الخميس", "6": "الجمعة", "7": "السبت"
+  };
+
+  // ===== تحويل 12 ساعة إلى 24 ساعة =====
+  function to24h(s) {
+    s = s.trim();
+    const m = s.match(/(\d{1,2}):(\d{2})\s*(ص|م)/);
+    if (!m) return s;
+    let h = parseInt(m[1]), mi = m[2], p = m[3];
+    if (p === 'م' && h !== 12) h += 12;
+    if (p === 'ص' && h === 12) h = 0;
+    return String(h).padStart(2, '0') + ':' + mi;
+  }
+
+  // ===== تنظيف الفترات الزمنية =====
+  function cleanSlots(rawSlots) {
+    if (!rawSlots || !Array.isArray(rawSlots)) return [];
+    const out = [];
+    for (const sl of rawSlots) {
+      if (sl.note) continue;
+      const df = (sl.day || '').trim();
+      if (!df) continue;
+      let st, en;
+      if (sl.start && sl.end) {
+        st = sl.start; en = sl.end;
+      } else if (sl.time && sl.time.includes('-')) {
+        const pp = sl.time.split('-');
+        st = to24h(pp[0]); en = to24h(pp[1]);
+      } else continue;
+      for (const dn of df.split(/\s+/)) {
+        out.push({ day: DAY_NAMES[dn] || dn, start: st, end: en, room: (sl.room || '').trim() });
+      }
+    }
+    return out;
+  }
+
+  // ===== تجميع الشعب تحت المقررات (نفس clean_sections.py) =====
+  function groupCourses(flatSections) {
+    const map = {};
+    for (const r of flatSections) {
+      const code = (r.course_code || '').trim();
+      if (!code) continue;
+      if (!map[code]) {
+        map[code] = {
+          course_code: code,
+          course_name: (r.course_name || '').trim(),
+          credit_hours: r.credit_hours || '',
+          sections: []
+        };
+      }
+      // حفظ الساعات لو موجودة
+      if (r.credit_hours && !map[code].credit_hours) {
+        map[code].credit_hours = r.credit_hours;
+      }
+      map[code].sections.push({
+        section_number: (r.section_number || '').trim(),
+        type: (r.type || 'نظري').trim(),
+        status: (r.status || 'مفتوحة').trim(),
+        instructor: (r.instructor || '').trim(),
+        slots: cleanSlots(r.slots || [])
+      });
+    }
+    return Object.values(map);
+  }
 
   // التحقق من وجود جدول المقررات في الصفحة
   const hasTable = document.querySelector('[id*="offeredCoursesTable"]') || document.querySelector('[id*="offeredCourses"]') || document.querySelector('table');
@@ -57,7 +126,7 @@
       const nonNameWords = ['نظري', 'عملي', 'مفتوحة', 'مغلقة', 'إناث', 'طلاب', 'طالبات', 'قاعة', 'معمل', 'مبنى', 'صباحي', 'مسائي', 'متاح', 'غير متاح', 'ساعات', 'ساعة', 'الفصل', 'المستوى'];
       for (let i = 2; i < cells.length; i++) {
         const text = cells[i].trim();
-        if (!text || text.match(/^[0-9:\-\s]+$/)) continue; // ignore numbers/times
+        if (!text || text.match(/^[0-9:\-\s]+$/)) continue;
         if (text.includes('د.') || text.includes('أ.') || text.includes('دكتور') || text.includes('أستاذ') || text.includes('د/') || text.includes('أ/')) {
           return text;
         }
@@ -98,7 +167,6 @@
         const row = input.closest('tr');
         const cells = row ? Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim()) : [];
         const instName = extractInstructorFromRow(row, cells, colInst);
-        const examEl = row ? row.querySelector('[id*="examPeriod"]') : null;
         const rawHours = colHours !== -1 ? cells[colHours] : '';
         const parsedHours = parseInt(rawHours) || '';
 
@@ -108,10 +176,8 @@
           section_number: (colSec !== -1 ? cells[colSec] : cells[2]) || '',
           type: (colType !== -1 ? cells[colType] : cells[3]) || 'نظري',
           credit_hours: (parsedHours >= 1 && parsedHours <= 8) ? parsedHours : '',
-          sub_sections_count: cells[4] || '',
           status: (colStatus !== -1 ? cells[colStatus] : cells[5]) || 'مفتوحة',
           instructor: instName,
-          exam_period: examEl ? examEl.innerText.trim() : (cells[7] || ''),
           slots: parseSectionTime(input.value)
         });
       });
@@ -177,10 +243,14 @@
     return true;
   });
 
-  toast.innerHTML = `تم استخراج ${uniqueSections.length} شعبة بنجاح! جاري فتح الجدول... 🚀`;
+  // ===== تنظيف وتجميع البيانات (نفس clean_sections.py) =====
+  const cleaned = groupCourses(uniqueSections);
+  const totalSec = cleaned.reduce((s, c) => s + c.sections.length, 0);
+
+  toast.innerHTML = `تم استخراج ${totalSec} شعبة في ${cleaned.length} مقرر بنجاح! 🚀`;
 
   setTimeout(() => {
-    const payload = encodeURIComponent(JSON.stringify(uniqueSections));
+    const payload = encodeURIComponent(JSON.stringify(cleaned));
     window.open(`${JADWAL_APP_URL}#data=${payload}`, '_blank');
     toast.remove();
   }, 800);
