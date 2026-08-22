@@ -975,13 +975,41 @@
       return courses;
     }
 
+    // Universal Arabic-to-English Transliteration Engine
+    function transliterateArabicWord(w) {
+      if (!w || !/[\u0600-\u06FF]/.test(w)) return w;
+      const charMap = {
+        'أ': 'A', 'إ': 'I', 'آ': 'Aa', 'ا': 'A', 'ء': "'", 'ئ': 'e', 'ؤ': 'u',
+        'ب': 'b', 'ت': 't', 'ث': 'th', 'ج': 'j', 'ح': 'h', 'خ': 'kh',
+        'د': 'd', 'ذ': 'dh', 'ر': 'r', 'ز': 'z', 'س': 's', 'ش': 'sh',
+        'ص': 's', 'ض': 'd', 'ط': 't', 'ظ': 'z', 'ع': 'a', 'غ': 'gh',
+        'ف': 'f', 'ق': 'q', 'ك': 'k', 'ل': 'l', 'م': 'm', 'ن': 'n',
+        'ه': 'h', 'ة': 'ah', 'و': 'w', 'ي': 'y', 'ى': 'a'
+      };
+      let prefix = '';
+      let body = w.trim();
+      if (body.startsWith('ال')) {
+        prefix = 'Al-';
+        body = body.slice(2);
+      }
+      let translit = '';
+      for (let i = 0; i < body.length; i++) {
+        const ch = body[i];
+        translit += charMap[ch] !== undefined ? charMap[ch] : ch;
+      }
+      if (translit.length > 0) {
+        translit = translit.charAt(0).toUpperCase() + translit.slice(1);
+      }
+      return prefix + translit;
+    }
+
     function getTranslatedCourseName(arName) {
       if (!arName) return '';
       if (currentLang !== 'en') return arName;
       const clean = arName.trim();
       if (COURSE_TRANSLATIONS[clean]) return COURSE_TRANSLATIONS[clean];
 
-      // Smart transliteration/word mapping for any unlisted course
+      // 1. Semantic Word Mapping
       let tr = clean;
       const map = [
         [/القرآن الكريم/g, 'Holy Quran'], [/القران الكريم/g, 'Holy Quran'], [/قرآن/g, 'Quran'], [/قران/g, 'Quran'],
@@ -1033,6 +1061,12 @@
       for (const [regex, rep] of map) {
         tr = tr.replace(regex, rep);
       }
+
+      // 2. Transliterate any remaining Arabic words so no Arabic remains
+      if (/[\u0600-\u06FF]/.test(tr)) {
+        tr = tr.split(/\s+/).map(w => transliterateArabicWord(w)).join(' ');
+      }
+
       return tr;
     }
 
@@ -1380,28 +1414,14 @@
         }
       }
 
-      const TARGET_SCHEDULES = 1000;
       const seenFingerprints = new Set();
       const allCandidates = [];
 
-      // Fisher-Yates shuffle
-      function shuffle(arr) {
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-      }
-
-      // Build fingerprint from sorted CRNs for dedup
       function fingerprint(sections) {
         return sections.map(s => s.sectionNumber).sort().join(',');
       }
 
-      // Fair exploration across ALL course combinations (validSets)
-      // Never let one combination starve out the others!
-      const quotaPerSet = Math.max(80, Math.ceil(3000 / validSets.length));
-
+      // Systematic Exploration across ALL validSets with Day-Clustering Heuristic
       for (const item of validSets) {
         const cSet = item.set;
         const courseOptionsBase = [];
@@ -1435,69 +1455,82 @@
 
         if (!possible) continue;
 
-        let foundInThisSet = 0;
-        const MAX_ROUNDS_PER_SET = 15;
-        const MAX_ITER_PER_ROUND = 3000;
+        // MRV: sort courses by fewest section options first for rapid branch pruning
+        courseOptionsBase.sort((a, b) => a.opts.length - b.opts.length);
 
-        for (let round = 0; round < MAX_ROUNDS_PER_SET; round++) {
-          if (foundInThisSet >= quotaPerSet) break;
+        const currentStack = [];
+        let iterations = 0;
+        const MAX_ITER_PER_SET = 30000;
+        let countWithOff = 0;
+        let countZeroOff = 0;
 
-          // Shuffle section options & course order for diversity
-          const courseOptions = courseOptionsBase.map(co => ({
-            code: co.code,
-            opts: shuffle([...co.opts])
-          }));
-          shuffle(courseOptions);
-          courseOptions.sort((a, b) => a.opts.length - b.opts.length);
+        function dfs(courseIdx) {
+          if (iterations >= MAX_ITER_PER_SET) return;
+          if (courseIdx === courseOptionsBase.length) {
+            const flat = currentStack.flat();
+            const fp = fingerprint(flat);
+            if (!seenFingerprints.has(fp)) {
+              seenFingerprints.add(fp);
+              const evalRes = evaluateSchedule(flat);
+              evalRes.courseSet = cSet;
+              evalRes.totalHours = item.hours;
 
-          const currentStack = [];
-          let iterInRound = 0;
-
-          function dfs(courseIdx) {
-            if (foundInThisSet >= quotaPerSet || iterInRound >= MAX_ITER_PER_ROUND) return;
-            if (courseIdx === courseOptions.length) {
-              const flat = currentStack.flat();
-              const fp = fingerprint(flat);
-              if (!seenFingerprints.has(fp)) {
-                seenFingerprints.add(fp);
-                const evalRes = evaluateSchedule(flat);
-                evalRes.courseSet = cSet;
-                evalRes.totalHours = item.hours;
+              if (evalRes.daysOffCount > 0) {
+                countWithOff++;
                 allCandidates.push(evalRes);
-                foundInThisSet++;
+              } else if (countZeroOff < 50) {
+                countZeroOff++;
+                allCandidates.push(evalRes);
               }
-              return;
             }
+            return;
+          }
 
-            const units = courseOptions[courseIdx].opts;
-            for (const unit of units) {
-              iterInRound++;
-              if (iterInRound >= MAX_ITER_PER_ROUND || foundInThisSet >= quotaPerSet) break;
-
-              let conflict = false;
-              for (const placedUnit of currentStack) {
-                for (const secP of placedUnit) {
-                  for (const secU of unit) {
-                    if (sectionsOverlap(secP, secU)) {
-                      conflict = true;
-                      break;
-                    }
-                  }
-                  if (conflict) break;
-                }
-                if (conflict) break;
-              }
-
-              if (!conflict) {
-                currentStack.push(unit);
-                dfs(courseIdx + 1);
-                currentStack.pop();
-              }
+          // Heuristic Day-Clustering:
+          // Order candidate sections so sections sharing already-used days are visited first.
+          // This systematically discovers 3-off, 2-off, and 1-off schedules right at the start!
+          const usedDays = new Set();
+          for (const placed of currentStack) {
+            for (const s of placed) {
+              for (const sl of s.slots) usedDays.add(sl.day);
             }
           }
 
-          dfs(0);
+          const rawUnits = courseOptionsBase[courseIdx].opts;
+          const sortedUnits = [...rawUnits].sort((uA, uB) => {
+            let newDaysA = 0, newDaysB = 0;
+            for (const s of uA) for (const sl of s.slots) if (!usedDays.has(sl.day)) newDaysA++;
+            for (const s of uB) for (const sl of s.slots) if (!usedDays.has(sl.day)) newDaysB++;
+            return newDaysA - newDaysB;
+          });
+
+          for (const unit of sortedUnits) {
+            iterations++;
+            if (iterations >= MAX_ITER_PER_SET) break;
+
+            let conflict = false;
+            for (const placedUnit of currentStack) {
+              for (const secP of placedUnit) {
+                for (const secU of unit) {
+                  if (sectionsOverlap(secP, secU)) {
+                    conflict = true;
+                    break;
+                  }
+                }
+                if (conflict) break;
+              }
+              if (conflict) break;
+            }
+
+            if (!conflict) {
+              currentStack.push(unit);
+              dfs(courseIdx + 1);
+              currentStack.pop();
+            }
+          }
         }
+
+        dfs(0);
       }
 
       if (allCandidates.length === 0) {
