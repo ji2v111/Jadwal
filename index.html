@@ -1310,9 +1310,9 @@
 
       const TARGET_SCHEDULES = 1000;
       const seenFingerprints = new Set();
-      const validSchedules = [];
+      const allCandidates = [];
 
-      // Fisher-Yates shuffle (in-place)
+      // Fisher-Yates shuffle
       function shuffle(arr) {
         for (let i = arr.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
@@ -1326,9 +1326,11 @@
         return sections.map(s => s.sectionNumber).sort().join(',');
       }
 
-      for (const item of validSets) {
-        if (validSchedules.length >= TARGET_SCHEDULES) break;
+      // Fair exploration across ALL course combinations (validSets)
+      // Never let one combination starve out the others!
+      const quotaPerSet = Math.max(80, Math.ceil(3000 / validSets.length));
 
+      for (const item of validSets) {
         const cSet = item.set;
         const courseOptionsBase = [];
         let possible = true;
@@ -1361,31 +1363,26 @@
 
         if (!possible) continue;
 
-        // Run multiple randomized DFS rounds with different shuffle orders
-        const MAX_ROUNDS = 40;
-        const MAX_ITER_PER_ROUND = 5000;
-        const MAX_FOUND_PER_ROUND = 100;
+        let foundInThisSet = 0;
+        const MAX_ROUNDS_PER_SET = 15;
+        const MAX_ITER_PER_ROUND = 3000;
 
-        for (let round = 0; round < MAX_ROUNDS; round++) {
-          if (validSchedules.length >= TARGET_SCHEDULES) break;
+        for (let round = 0; round < MAX_ROUNDS_PER_SET; round++) {
+          if (foundInThisSet >= quotaPerSet) break;
 
-          // Shuffle both the course order AND each course's section options
+          // Shuffle section options & course order for diversity
           const courseOptions = courseOptionsBase.map(co => ({
             code: co.code,
             opts: shuffle([...co.opts])
           }));
           shuffle(courseOptions);
-
-          // MRV: sort by fewest options first (after shuffle for tie-breaking randomness)
           courseOptions.sort((a, b) => a.opts.length - b.opts.length);
 
           const currentStack = [];
-          let foundInRound = 0;
           let iterInRound = 0;
 
           function dfs(courseIdx) {
-            if (foundInRound >= MAX_FOUND_PER_ROUND || iterInRound >= MAX_ITER_PER_ROUND) return;
-            if (validSchedules.length >= TARGET_SCHEDULES) return;
+            if (foundInThisSet >= quotaPerSet || iterInRound >= MAX_ITER_PER_ROUND) return;
             if (courseIdx === courseOptions.length) {
               const flat = currentStack.flat();
               const fp = fingerprint(flat);
@@ -1394,8 +1391,8 @@
                 const evalRes = evaluateSchedule(flat);
                 evalRes.courseSet = cSet;
                 evalRes.totalHours = item.hours;
-                validSchedules.push(evalRes);
-                foundInRound++;
+                allCandidates.push(evalRes);
+                foundInThisSet++;
               }
               return;
             }
@@ -1403,8 +1400,7 @@
             const units = courseOptions[courseIdx].opts;
             for (const unit of units) {
               iterInRound++;
-              if (iterInRound >= MAX_ITER_PER_ROUND || foundInRound >= MAX_FOUND_PER_ROUND) break;
-              if (validSchedules.length >= TARGET_SCHEDULES) break;
+              if (iterInRound >= MAX_ITER_PER_ROUND || foundInThisSet >= quotaPerSet) break;
 
               let conflict = false;
               for (const placedUnit of currentStack) {
@@ -1432,7 +1428,7 @@
         }
       }
 
-      if (validSchedules.length === 0) {
+      if (allCandidates.length === 0) {
         showDiagnosisModal(mandatoryCodes, excludedCodes, targetHours, allowClosed, validSets.map(v => v.set));
         return;
       }
@@ -1441,7 +1437,7 @@
       const diagEl = document.getElementById('diagModal');
       if (diagEl) diagEl.classList.add('hidden');
 
-      currentSchedules = validSchedules;
+      currentSchedules = allCandidates;
       sortAndRefreshSchedules();
     }
 
@@ -1451,10 +1447,14 @@
         return;
       }
 
+      // Strict Global Sorting across ALL course combinations
       if (currentSortMode === 'days_off') {
         currentSchedules.sort((a, b) => {
+          // 1. Most days off first
           if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
+          // 2. Minimum total gap minutes
           if (a.totalGaps !== b.totalGaps) return a.totalGaps - b.totalGaps;
+          // 3. Earlier completion
           return a.totalLateMinutes - b.totalLateMinutes;
         });
       } else if (currentSortMode === 'min_gaps') {
@@ -1475,6 +1475,11 @@
           if (b.daysOffCount !== a.daysOffCount) return b.daysOffCount - a.daysOffCount;
           return a.totalGaps - b.totalGaps;
         });
+      }
+
+      // Cap to 1000 top ranked solutions
+      if (currentSchedules.length > 1000) {
+        currentSchedules = currentSchedules.slice(0, 1000);
       }
 
       currentIndex = 0;
