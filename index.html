@@ -269,9 +269,10 @@
               <span data-i18n="prevBtnText">السابق</span>
             </button>
 
-            <select id="scheduleSelect" onchange="showSchedule(parseInt(this.value))" class="bg-slate-50 dark:bg-slate-850 text-xs font-bold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-blue-500 font-sans cursor-pointer">
-              <option value="0">0 / 0</option>
-            </select>
+            <div class="flex items-center gap-1.5">
+              <input type="number" id="scheduleNumberInput" min="1" max="1" value="1" onchange="jumpToScheduleNumber(parseInt(this.value))" onkeydown="handleScheduleInputKey(event)" class="bg-slate-50 dark:bg-slate-850 text-xs font-bold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg w-16 px-2 py-1.5 text-center focus:outline-none focus:border-blue-500 font-sans [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none">
+              <span id="scheduleTotalLabel" class="text-xs font-bold text-slate-500 dark:text-slate-400 font-sans">/ 0</span>
+            </div>
 
             <button onclick="nextSchedule()" id="nextBtn" title="الجدول التالي" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition disabled:opacity-30 disabled:pointer-events-none shadow-sm shadow-blue-500/20 flex items-center gap-1.5">
               <span data-i18n="nextBtnText">التالي</span>
@@ -1151,11 +1152,29 @@
         }
       }
 
+      const TARGET_SCHEDULES = 1000;
+      const seenFingerprints = new Set();
       const validSchedules = [];
 
+      // Fisher-Yates shuffle (in-place)
+      function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      // Build fingerprint from sorted CRNs for dedup
+      function fingerprint(sections) {
+        return sections.map(s => s.sectionNumber).sort().join(',');
+      }
+
       for (const item of validSets) {
+        if (validSchedules.length >= TARGET_SCHEDULES) break;
+
         const cSet = item.set;
-        const courseOptions = [];
+        const courseOptionsBase = [];
         let possible = true;
 
         for (const code of cSet) {
@@ -1181,61 +1200,80 @@
             possible = false;
             break;
           }
-          courseOptions.push(opts);
+          courseOptionsBase.push({ code, opts });
         }
 
         if (!possible) continue;
 
-        // MRV Heuristic: Sort courses with fewest units first for instant branch pruning
-        courseOptions.sort((a, b) => a.length - b.length);
+        // Run multiple randomized DFS rounds with different shuffle orders
+        const MAX_ROUNDS = 40;
+        const MAX_ITER_PER_ROUND = 5000;
+        const MAX_FOUND_PER_ROUND = 100;
 
-        // Fast DFS traversal of course units
-        const currentStack = [];
-        let foundInSet = 0;
-        let iterInSet = 0;
-        const MAX_PER_SET = 25;
-        const MAX_ITER_PER_SET = 2000;
+        for (let round = 0; round < MAX_ROUNDS; round++) {
+          if (validSchedules.length >= TARGET_SCHEDULES) break;
 
-        function dfs(courseIdx) {
-          if (foundInSet >= MAX_PER_SET || iterInSet >= MAX_ITER_PER_SET) return;
-          if (courseIdx === courseOptions.length) {
-            const flat = currentStack.flat();
-            const evalRes = evaluateSchedule(flat);
-            evalRes.courseSet = cSet;
-            evalRes.totalHours = item.hours;
-            validSchedules.push(evalRes);
-            foundInSet++;
-            return;
-          }
+          // Shuffle both the course order AND each course's section options
+          const courseOptions = courseOptionsBase.map(co => ({
+            code: co.code,
+            opts: shuffle([...co.opts])
+          }));
+          shuffle(courseOptions);
 
-          const units = courseOptions[courseIdx];
-          for (const unit of units) {
-            iterInSet++;
-            if (iterInSet >= MAX_ITER_PER_SET || foundInSet >= MAX_PER_SET) break;
+          // MRV: sort by fewest options first (after shuffle for tie-breaking randomness)
+          courseOptions.sort((a, b) => a.opts.length - b.opts.length);
 
-            let conflict = false;
-            for (const placedUnit of currentStack) {
-              for (const secP of placedUnit) {
-                for (const secU of unit) {
-                  if (sectionsOverlap(secP, secU)) {
-                    conflict = true;
-                    break;
+          const currentStack = [];
+          let foundInRound = 0;
+          let iterInRound = 0;
+
+          function dfs(courseIdx) {
+            if (foundInRound >= MAX_FOUND_PER_ROUND || iterInRound >= MAX_ITER_PER_ROUND) return;
+            if (validSchedules.length >= TARGET_SCHEDULES) return;
+            if (courseIdx === courseOptions.length) {
+              const flat = currentStack.flat();
+              const fp = fingerprint(flat);
+              if (!seenFingerprints.has(fp)) {
+                seenFingerprints.add(fp);
+                const evalRes = evaluateSchedule(flat);
+                evalRes.courseSet = cSet;
+                evalRes.totalHours = item.hours;
+                validSchedules.push(evalRes);
+                foundInRound++;
+              }
+              return;
+            }
+
+            const units = courseOptions[courseIdx].opts;
+            for (const unit of units) {
+              iterInRound++;
+              if (iterInRound >= MAX_ITER_PER_ROUND || foundInRound >= MAX_FOUND_PER_ROUND) break;
+              if (validSchedules.length >= TARGET_SCHEDULES) break;
+
+              let conflict = false;
+              for (const placedUnit of currentStack) {
+                for (const secP of placedUnit) {
+                  for (const secU of unit) {
+                    if (sectionsOverlap(secP, secU)) {
+                      conflict = true;
+                      break;
+                    }
                   }
+                  if (conflict) break;
                 }
                 if (conflict) break;
               }
-              if (conflict) break;
-            }
 
-            if (!conflict) {
-              currentStack.push(unit);
-              dfs(courseIdx + 1);
-              currentStack.pop();
+              if (!conflict) {
+                currentStack.push(unit);
+                dfs(courseIdx + 1);
+                currentStack.pop();
+              }
             }
           }
-        }
 
-        dfs(0);
+          dfs(0);
+        }
       }
 
       if (validSchedules.length === 0) {
@@ -1288,12 +1326,14 @@
     }
 
     function showSchedule(idx) {
-      const sel = document.getElementById('scheduleSelect');
+      const numInput = document.getElementById('scheduleNumberInput');
+      const totalLabel = document.getElementById('scheduleTotalLabel');
       if (!currentSchedules || currentSchedules.length === 0) {
         document.getElementById('rankBadgeText').innerText = '—';
         document.getElementById('daysOffBadge').innerText = currentLang === 'en' ? 'Days Off: —' : 'أيام الفراغ: —';
         document.getElementById('gapSummaryText').innerText = currentLang === 'en' ? 'Waiting for courses data...' : 'في انتظار استيراد المقررات...';
-        if (sel) sel.innerHTML = '<option value="0">0 / 0</option>';
+        if (numInput) { numInput.value = 0; numInput.max = 0; }
+        if (totalLabel) totalLabel.innerText = '/ 0';
         document.getElementById('electivesBadge').innerText = currentLang === 'en' ? 'Added Electives: —' : 'المواد الإضافية: —';
         document.getElementById('prevBtn').disabled = true;
         document.getElementById('nextBtn').disabled = true;
@@ -1311,11 +1351,11 @@
         return;
       }
 
-      if (idx < 0 || idx >= currentSchedules.length) return;
+      const total = currentSchedules.length;
+      if (idx < 0 || idx >= total) return;
       currentIndex = idx;
       const sched = currentSchedules[idx];
       const rank = idx + 1;
-      const total = Math.min(50, currentSchedules.length);
 
       document.getElementById('rankBadgeText').innerText = `#${rank}`;
       
@@ -1326,18 +1366,12 @@
       document.getElementById('daysOffBadge').innerText = sched.daysOff.length > 0 ? `${TRANSLATIONS[currentLang].daysOffLabel} ${offDaysTranslated.join(', ')}` : TRANSLATIONS[currentLang].noDaysOff;
       document.getElementById('gapSummaryText').innerText = `${TRANSLATIONS[currentLang].gapsLabel} ${(sched.totalGaps / 60).toFixed(1)} ${currentLang === 'ar' ? 'ساعة' : 'hrs'} • ${sched.totalHours} ${TRANSLATIONS[currentLang].creditHoursLabel}`;
 
-      if (sel) {
-        sel.innerHTML = '';
-        for (let i = 0; i < total; i++) {
-          const opt = document.createElement('option');
-          opt.value = i;
-          opt.selected = (i === idx);
-          const s = currentSchedules[i];
-          const offCount = s.daysOff ? s.daysOff.length : 0;
-          opt.text = `${currentLang === 'ar' ? 'جدول' : 'Schedule'} #${i + 1} (${offCount} ${currentLang === 'ar' ? 'أيام فراغ' : 'off'} • ${(s.totalGaps / 60).toFixed(1)}h)`;
-          sel.appendChild(opt);
-        }
+      if (numInput) {
+        numInput.value = rank;
+        numInput.max = total;
+        numInput.min = 1;
       }
+      if (totalLabel) totalLabel.innerText = `/ ${total}`;
 
       document.getElementById('prevBtn').disabled = idx === 0;
       document.getElementById('nextBtn').disabled = idx === total - 1;
@@ -1358,7 +1392,26 @@
     }
 
     function nextSchedule() {
-      if (currentIndex < currentSchedules.length - 1 && currentIndex < 49) showSchedule(currentIndex + 1);
+      if (currentIndex < currentSchedules.length - 1) showSchedule(currentIndex + 1);
+    }
+
+    function jumpToScheduleNumber(num) {
+      if (!currentSchedules || currentSchedules.length === 0) return;
+      num = Math.max(1, Math.min(currentSchedules.length, num || 1));
+      showSchedule(num - 1);
+    }
+
+    function handleScheduleInputKey(e) {
+      if (e.key === 'Enter') {
+        e.target.blur();
+        jumpToScheduleNumber(parseInt(e.target.value));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        jumpToScheduleNumber((currentIndex + 1) + 1);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        jumpToScheduleNumber((currentIndex + 1) - 1);
+      }
     }
 
     function renderProportionalCalendar(sched) {
@@ -1818,7 +1871,7 @@
     }
 
     window.addEventListener('keydown', (e) => {
-      if (e.target.tagName === 'INPUT') return;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
       if (e.key === 'ArrowRight') {
         if (currentLang === 'ar') prevSchedule();
         else nextSchedule();
