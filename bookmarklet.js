@@ -1,6 +1,6 @@
 // =========================================================================
 // JADWAL - أداة سحب المقررات التلقائية الشاملة من بوابات الجامعات
-// v3.0 - تنظيف وتجميع البيانات تلقائياً (نفس clean_sections.py)
+// v3.1 - تنظيف متقدم للساعات والمحاضرين وتجميع البيانات تلقائياً
 // =========================================================================
 
 (async function() {
@@ -14,12 +14,13 @@
 
   // ===== تحويل 12 ساعة إلى 24 ساعة =====
   function to24h(s) {
+    if (!s) return '';
     s = s.trim();
-    const m = s.match(/(\d{1,2}):(\d{2})\s*(ص|م)/);
+    const m = s.match(/(\d{1,2}):(\d{2})\s*(ص|م|AM|PM|am|pm)?/i);
     if (!m) return s;
-    let h = parseInt(m[1]), mi = m[2], p = m[3];
-    if (p === 'م' && h !== 12) h += 12;
-    if (p === 'ص' && h === 12) h = 0;
+    let h = parseInt(m[1]), mi = m[2], p = (m[3] || '').toUpperCase();
+    if ((p === 'م' || p === 'PM') && h !== 12) h += 12;
+    if ((p === 'ص' || p === 'AM') && h === 12) h = 0;
     return String(h).padStart(2, '0') + ':' + mi;
   }
 
@@ -28,7 +29,7 @@
     if (!rawSlots || !Array.isArray(rawSlots)) return [];
     const out = [];
     for (const sl of rawSlots) {
-      if (sl.note) continue;
+      if (sl.note && String(sl.note).includes('اتفاق')) continue;
       const df = (sl.day || '').trim();
       if (!df) continue;
       let st, en;
@@ -38,14 +39,14 @@
         const pp = sl.time.split('-');
         st = to24h(pp[0]); en = to24h(pp[1]);
       } else continue;
-      for (const dn of df.split(/\s+/)) {
+      for (const dn of df.split(/[\s,]+/)) {
         out.push({ day: DAY_NAMES[dn] || dn, start: st, end: en, room: (sl.room || '').trim() });
       }
     }
     return out;
   }
 
-  // ===== تجميع الشعب تحت المقررات (نفس clean_sections.py) =====
+  // ===== تجميع الشعب تحت المقررات =====
   function groupCourses(flatSections) {
     const map = {};
     for (const r of flatSections) {
@@ -59,8 +60,7 @@
           sections: []
         };
       }
-      // حفظ الساعات لو موجودة
-      if (r.credit_hours && !map[code].credit_hours) {
+      if (r.credit_hours && (!map[code].credit_hours || map[code].credit_hours === '')) {
         map[code].credit_hours = r.credit_hours;
       }
       map[code].sections.push({
@@ -99,50 +99,70 @@
   function extractInstructorFromRow(row, cells, colInst) {
     if (!row && !cells) return '';
     
+    // كلمات الواجهة والأزرار التي يجب استبعادها تماماً
+    const UI_WORDS = [
+      'التفاصيل', 'تفاصيل', 'عرض', 'تعديل', 'حذف', 'إضافة', 'تسجيل', 'إلغاء', 
+      'بحث', 'اختيار', 'تحديد', 'موافق', 'رجوع', 'المزيد', 'أكثر', 'details', 
+      'view', 'edit', 'delete', 'more', 'شعبة', 'قاعة', 'مبنى', 'نظري', 'عملي',
+      'مفتوحة', 'مغلقة', 'ساعات', 'ساعة', 'معتمدة'
+    ];
+    
+    function isValidInstructorName(text) {
+      if (!text || typeof text !== 'string') return false;
+      const t = text.trim();
+      if (t.length < 3) return false;
+      if (UI_WORDS.some(w => t === w || t.toLowerCase() === w)) return false;
+      if (t.match(/^[0-9:\-\s.+/\\_()]+$/)) return false;
+      if (t === 'لم يحدد' || t === 'لم يحدد من الكلية' || t === 'TBA') return true;
+      // يجب ألا يحتوي على كلمات واجهة شائعة مثل التفاصيل
+      if (t.includes('التفاصيل') || t.includes('تفاصيل')) return false;
+      return true;
+    }
+    
     // 1. Direct ID / Class match inside the row
     if (row) {
       const el = row.querySelector('[id*="instructor"], [id*="faculty"], [id*="teacher"], [id*="staff"], [id*="emp"], [class*="instructor"], [class*="faculty"], [class*="teacher"]');
-      if (el && el.innerText.trim()) return el.innerText.trim();
+      if (el) {
+        const titleAttr = el.getAttribute('title') || el.getAttribute('aria-label') || '';
+        if (titleAttr && isValidInstructorName(titleAttr)) return titleAttr.trim();
+        const txt = el.innerText.trim();
+        if (txt && isValidInstructorName(txt)) return txt;
+      }
     }
 
     // 2. Column header match
-    if (colInst !== -1 && cells && cells[colInst] && cells[colInst].trim()) {
-      return cells[colInst].trim();
+    if (colInst !== -1 && cells && cells[colInst]) {
+      const txt = cells[colInst].trim();
+      if (isValidInstructorName(txt)) return txt;
     }
 
-    // 3. Scan all cells for title or name prefixes
+    // 3. Scan all elements for title/aria-label containing name prefixes
     if (row) {
-      const allElements = row.querySelectorAll('td, span, a, div');
+      const allElements = row.querySelectorAll('td, span, a, div, label');
       for (const el of allElements) {
         const title = el.getAttribute('title') || el.getAttribute('aria-label') || '';
-        if (title.includes('د.') || title.includes('أ.') || title.includes('دكتور') || title.includes('أستاذ')) {
+        if (title && isValidInstructorName(title) && (title.includes('د.') || title.includes('أ.') || title.includes('دكتور') || title.includes('أستاذ') || title.split(/\s+/).length >= 2)) {
           return title.trim();
         }
       }
     }
 
-    // 4. Scan cell text for Arabic names / prefixes
+    // 4. Scan cell text for Arabic names (excluding cells that match numbers or UI)
     if (cells && cells.length > 0) {
-      const nonNameWords = ['نظري', 'عملي', 'مفتوحة', 'مغلقة', 'إناث', 'طلاب', 'طالبات', 'قاعة', 'معمل', 'مبنى', 'صباحي', 'مسائي', 'متاح', 'غير متاح', 'ساعات', 'ساعة', 'الفصل', 'المستوى'];
       for (let i = 2; i < cells.length; i++) {
         const text = cells[i].trim();
-        if (!text || text.match(/^[0-9:\-\s]+$/)) continue;
+        if (!isValidInstructorName(text)) continue;
         if (text.includes('د.') || text.includes('أ.') || text.includes('دكتور') || text.includes('أستاذ') || text.includes('د/') || text.includes('أ/')) {
           return text;
         }
         const words = text.split(/\s+/);
-        if (words.length >= 2 && words.length <= 5 && !nonNameWords.some(w => text.includes(w))) {
-          if (!text.match(/[0-9]/)) return text;
+        if (words.length >= 3 && words.length <= 6 && !text.match(/[0-9]/)) {
+          return text;
         }
       }
     }
 
-    // 5. Fallback position (cell index 6)
-    if (cells && cells[6] && !cells[6].match(/^[0-9]+$/)) {
-      return cells[6].trim();
-    }
-
-    return '';
+    return 'لم يحدد من الكلية';
   }
 
   function scrapeCurrentPage() {
@@ -152,13 +172,14 @@
     let colCode = -1, colName = -1, colSec = -1, colType = -1, colHours = -1, colStatus = -1, colInst = -1;
 
     headers.forEach((h, i) => {
-      if (h.includes('رمز') || h.includes('كود') || h.includes('code')) colCode = i;
-      else if (h.includes('اسم') || h.includes('مقرر') || h.includes('title') || h.includes('name')) colName = i;
-      else if (h.includes('شعبة') || h.includes('رقم') || h.includes('sec') || h.includes('crn')) colSec = i;
-      else if (h.includes('نوع') || h.includes('نشاط') || h.includes('type')) colType = i;
-      else if (h.includes('ساعات') || h.includes('معتمدة') || h.includes('hour') || h.includes('cr')) colHours = i;
-      else if (h.includes('حالة') || h.includes('status')) colStatus = i;
-      else if (h.includes('محاضر') || h.includes('استاذ') || h.includes('أستاذ') || h.includes('مدرس') || h.includes('تدريس') || h.includes('دكتور') || h.includes('instructor') || h.includes('faculty') || h.includes('teacher')) colInst = i;
+      const cleanH = h.replace(/[\s\.\-_]+/g, '');
+      if (cleanH.includes('رمز') || cleanH.includes('كود') || cleanH.includes('code')) colCode = i;
+      else if (cleanH.includes('اسم') || cleanH.includes('مقرر') || cleanH.includes('title') || cleanH.includes('name')) colName = i;
+      else if (cleanH.includes('شعبة') || cleanH.includes('رقم') || cleanH.includes('sec') || cleanH.includes('crn')) colSec = i;
+      else if (cleanH.includes('نوع') || cleanH.includes('نشاط') || cleanH.includes('type')) colType = i;
+      else if (cleanH.includes('ساعات') || cleanH.includes('معتمدة') || cleanH.includes('سم') || cleanH.includes('hour') || cleanH.includes('cr') || cleanH.includes('credit') || cleanH.includes('unit')) colHours = i;
+      else if (cleanH.includes('حالة') || cleanH.includes('status')) colStatus = i;
+      else if (cleanH.includes('محاضر') || cleanH.includes('استاذ') || cleanH.includes('أستاذ') || cleanH.includes('مدرس') || cleanH.includes('تدريس') || cleanH.includes('دكتور') || cleanH.includes('instructor') || cleanH.includes('faculty') || cleanH.includes('teacher')) colInst = i;
     });
 
     const sectionInputs = document.querySelectorAll('[id*="offeredCoursesTable:"][id$=":section"]');
@@ -167,7 +188,12 @@
         const row = input.closest('tr');
         const cells = row ? Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim()) : [];
         const instName = extractInstructorFromRow(row, cells, colInst);
-        const rawHours = colHours !== -1 ? cells[colHours] : '';
+        
+        // Extract credit hours from detected column OR default to cells[4]
+        let rawHours = colHours !== -1 ? cells[colHours] : '';
+        if (!rawHours && cells[4] && cells[4].match(/^[1-8]$/)) {
+          rawHours = cells[4];
+        }
         const parsedHours = parseInt(rawHours) || '';
 
         results.push({
@@ -186,7 +212,10 @@
       rows.forEach(row => {
         const cells = Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim());
         if (cells.length >= 4) {
-          const rawHours = colHours !== -1 ? cells[colHours] : '';
+          let rawHours = colHours !== -1 ? cells[colHours] : '';
+          if (!rawHours && cells[4] && cells[4].match(/^[1-8]$/)) {
+            rawHours = cells[4];
+          }
           const parsedHours = parseInt(rawHours) || '';
           const instName = extractInstructorFromRow(row, cells, colInst);
 
@@ -243,7 +272,7 @@
     return true;
   });
 
-  // ===== تنظيف وتجميع البيانات (نفس clean_sections.py) =====
+  // ===== تنظيف وتجميع البيانات =====
   const cleaned = groupCourses(uniqueSections);
   const totalSec = cleaned.reduce((s, c) => s + c.sections.length, 0);
 

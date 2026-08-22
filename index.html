@@ -592,14 +592,63 @@
     };
 
     const COURSE_TRANSLATIONS = {
+      // Islamic Studies & Sharia
+      "أحاديث الأحكام 1": "Ahadith Al-Ahkam 1",
+      "أحاديث الأحكام 2": "Ahadith Al-Ahkam 2",
+      "أحاديث الأحكام": "Ahadith Al-Ahkam",
+      "المدخل إلى علم التفسير": "Intro to Tafseer Science",
+      "مدخل إلى علم التفسير": "Intro to Tafseer Science",
+      "المقدمة في مصطلح الحديث": "Intro to Hadith Terminology",
+      "مقدمة في مصطلح الحديث": "Intro to Hadith Terminology",
+      "مصطلح الحديث": "Hadith Terminology",
+      "توحيد 1": "Tawheed 1",
+      "توحيد 2": "Tawheed 2",
+      "توحيد": "Tawheed",
+      "التوحيد": "Tawheed",
+      "القرآن الكريم 1": "Holy Quran 1",
+      "القرآن الكريم 2": "Holy Quran 2",
+      "القرآن الكريم 3": "Holy Quran 3",
+      "القرآن الكريم 4": "Holy Quran 4",
+      "القرآن الكريم (1)": "Holy Quran (1)",
+      "القرآن الكريم (2)": "Holy Quran (2)",
+      "القرآن الكريم (3)": "Holy Quran (3)",
+      "القرآن الكريم (4)": "Holy Quran (4)",
+      "قرآن كريم 1": "Holy Quran 1",
+      "قرآن كريم 2": "Holy Quran 2",
+      "قيم إسلامية": "Islamic Values",
+      "القيم الإسلامية": "Islamic Values",
+      "تاريخ المملكة": "History of Saudi Arabia",
+      "تاريخ المملكة العربية السعودية": "History of Saudi Arabia",
+      "العقيدة": "Islamic Creed",
+      "العقيده": "Islamic Creed",
+      "العقيدة 1": "Islamic Creed 1",
+      "العقيدة 2": "Islamic Creed 2",
+      "فقه 1": "Islamic Jurisprudence 1",
+      "فقه 2": "Islamic Jurisprudence 2",
+      "فقه العبادات": "Fiqh of Worship",
+      "فقه المعاملات": "Fiqh of Transactions",
+      "فقه الأسرة": "Family Fiqh",
+      "أصول الفقه": "Principles of Jurisprudence",
+      "السيرة النبوية": "Prophetic Biography",
+      "الثقافة الإسلامية": "Islamic Culture",
+      "الثقافة الإسلامية 1": "Islamic Culture 1",
+      "الثقافة الإسلامية 2": "Islamic Culture 2",
+      // Languages & General Skills
+      "اللغة العربية": "Arabic Language",
+      "المهارات اللغوية": "Language Skills",
+      "التحرير العربي": "Arabic Writing",
+      "مهارات الاتصال": "Communication Skills",
+      "المهارات الأكاديمية": "Academic Skills",
+      "اللغة الإنجليزية": "English Language",
+      "اللغة الإنجليزية 1": "English Language 1",
+      "اللغة الإنجليزية 2": "English Language 2",
+      "اللغة الإنجليزية العامة": "General English",
+      // Computing & Engineering
       "الذكاء الاصطناعي": "Artificial Intelligence",
       "تعلم الآلة": "Machine Learning",
       "تفاعل الإنسان والحاسب": "Human-Computer Interaction",
       "تطوير تطبيقات الويب": "Web Application Development",
       "إدارة مشاريع تقنية المعلومات": "IT Project Management",
-      "القرآن الكريم (4)": "Holy Quran (4)",
-      "العقيده": "Islamic Creed",
-      "العقيدة": "Islamic Creed",
       "التعلم العميق": "Deep Learning",
       "تقنيات ريادة الأعمال": "Entrepreneurship Technologies",
       "الأخلاقيات والابتكار المسؤول": "Ethics & Responsible Innovation",
@@ -607,7 +656,26 @@
       "التنقيب عن البيانات": "Data Mining",
       "عرض وتصوير البيانات": "Data Visualization",
       "التطوير القائم على المنصات": "Platform-Based Development",
-      "أمن البيانات وخصوصيتها": "Data Security & Privacy"
+      "أمن البيانات وخصوصيتها": "Data Security & Privacy",
+      "الأمن السيبراني": "Cybersecurity",
+      "أمن المعلومات": "Information Security",
+      "نظم التشغيل": "Operating Systems",
+      "شبكات الحاسب": "Computer Networks",
+      "قواعد البيانات": "Databases",
+      "هياكل البيانات": "Data Structures",
+      "الخوارزميات": "Algorithms",
+      "تصميم وتحليل الخوارزميات": "Analysis & Design of Algorithms",
+      "هندسة البرمجيات": "Software Engineering",
+      "برمجة 1": "Programming 1",
+      "برمجة 2": "Programming 2",
+      "مشروع التخرج 1": "Graduation Project 1",
+      "مشروع التخرج 2": "Graduation Project 2",
+      "رياضيات 1": "Calculus 1",
+      "رياضيات 2": "Calculus 2",
+      "التفاضل والتكامل": "Calculus",
+      "الجبر الخطي": "Linear Algebra",
+      "الإحصاء والاحتمالات": "Probability & Statistics",
+      "الفيزياء العامة": "General Physics"
     };
 
     const INSTRUCTOR_TRANSLATIONS = {
@@ -780,23 +848,30 @@
           const code = (item.course_code || item.courseCode || item.code).trim();
           const name = (item.course_name || item.courseName || item.name || code).trim();
           
+          let rawH = item.credit_hours || item.sub_sections_count || item.hours || item.credits || item.cr || '';
+          let parsedH = parseInt(rawH);
           let h = 3;
-          if (item.credit_hours && parseInt(item.credit_hours) >= 1 && parseInt(item.credit_hours) <= 8) h = parseInt(item.credit_hours);
-          else if (item.hours && parseInt(item.hours) >= 1 && parseInt(item.hours) <= 8) h = parseInt(item.hours);
-          else if (item.credits && parseInt(item.credits) >= 1 && parseInt(item.credits) <= 8) h = parseInt(item.credits);
-          else if (name.includes('القرآن') || code.includes('قرأ')) h = 1;
-          else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('إدارة مشاريع') || name.includes('ثقافة') || name.includes('مهارات')) h = 2;
+          if (parsedH >= 1 && parsedH <= 8) {
+            h = parsedH;
+          } else if (name.includes('القرآن') || name.includes('قرآن') || code.includes('قرأ')) {
+            h = 1;
+          } else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('قيم') || name.includes('تاريخ') || name.includes('إدارة مشاريع') || name.includes('ثقافة') || name.includes('مهارات')) {
+            h = 2;
+          }
 
           if (!courses[code]) {
             courses[code] = { code, name, creditHours: h, theory: [], practical: [] };
           }
 
           for (const sec of item.sections) {
+            let inst = (sec.instructor || '').trim();
+            if (inst === 'التفاصيل' || inst.includes('تفاصيل') || inst === 'عرض') inst = '';
+
             const secObj = {
               sectionNumber: String(sec.section_number || sec.sectionNumber || sec.section || sec.crn || '').trim(),
               type: (sec.type || 'نظري').trim(),
               status: (sec.status || 'مفتوحة').trim(),
-              instructor: (sec.instructor || '').trim(),
+              instructor: inst,
               slots: parseSlots(sec.slots || []),
               courseCode: code,
               courseName: name
@@ -808,22 +883,29 @@
           const code = (item.course_code || item.courseCode || item.code).trim();
           const name = (item.course_name || item.courseName || item.name || code).trim();
 
+          let rawH = item.credit_hours || item.sub_sections_count || item.hours || item.credits || item.cr || '';
+          let parsedH = parseInt(rawH);
           let h = 3;
-          if (item.credit_hours && parseInt(item.credit_hours) >= 1 && parseInt(item.credit_hours) <= 8) h = parseInt(item.credit_hours);
-          else if (item.hours && parseInt(item.hours) >= 1 && parseInt(item.hours) <= 8) h = parseInt(item.hours);
-          else if (item.credits && parseInt(item.credits) >= 1 && parseInt(item.credits) <= 8) h = parseInt(item.credits);
-          else if (name.includes('القرآن') || code.includes('قرأ')) h = 1;
-          else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('إدارة مشاريع') || name.includes('ثقافة') || name.includes('مهارات')) h = 2;
+          if (parsedH >= 1 && parsedH <= 8) {
+            h = parsedH;
+          } else if (name.includes('القرآن') || name.includes('قرآن') || code.includes('قرأ')) {
+            h = 1;
+          } else if (name.includes('ريادة') || name.includes('الأخلاقيات') || name.includes('قيم') || name.includes('تاريخ') || name.includes('إدارة مشاريع') || name.includes('ثقافة') || name.includes('مهارات')) {
+            h = 2;
+          }
 
           if (!courses[code]) {
             courses[code] = { code, name, creditHours: h, theory: [], practical: [] };
           }
 
+          let inst = (item.instructor || '').trim();
+          if (inst === 'التفاصيل' || inst.includes('تفاصيل') || inst === 'عرض') inst = '';
+
           const secObj = {
             sectionNumber: String(item.section_number || item.sectionNumber || item.section || item.crn || '').trim(),
             type: (item.type || 'نظري').trim(),
             status: (item.status || 'مفتوحة').trim(),
-            instructor: (item.instructor || '').trim(),
+            instructor: inst,
             slots: parseSlots(item.slots || []),
             courseCode: code,
             courseName: name
@@ -837,17 +919,91 @@
     }
 
     function getTranslatedCourseName(arName) {
-      if (currentLang === 'en') return COURSE_TRANSLATIONS[arName] || arName;
-      return arName;
+      if (!arName) return '';
+      if (currentLang !== 'en') return arName;
+      const clean = arName.trim();
+      if (COURSE_TRANSLATIONS[clean]) return COURSE_TRANSLATIONS[clean];
+
+      // Smart transliteration/word mapping for any unlisted course
+      let tr = clean;
+      const map = [
+        [/القرآن الكريم/g, 'Holy Quran'], [/القران الكريم/g, 'Holy Quran'], [/قرآن/g, 'Quran'], [/قران/g, 'Quran'],
+        [/العقيدة/g, 'Islamic Creed'], [/العقيده/g, 'Islamic Creed'],
+        [/التوحيد/g, 'Tawheed'], [/توحيد/g, 'Tawheed'],
+        [/قيم إسلامية/g, 'Islamic Values'], [/القيم الإسلامية/g, 'Islamic Values'],
+        [/تاريخ المملكة العربية السعودية/g, 'History of Saudi Arabia'], [/تاريخ المملكة/g, 'History of Saudi Arabia'],
+        [/أحاديث الأحكام/g, 'Ahadith Al-Ahkam'], [/احاديث الاحكام/g, 'Ahadith Al-Ahkam'],
+        [/المدخل إلى علم التفسير/g, 'Intro to Tafseer Science'], [/مدخل إلى علم التفسير/g, 'Intro to Tafseer Science'],
+        [/المقدمة في مصطلح الحديث/g, 'Intro to Hadith Terminology'], [/مقدمة في مصطلح الحديث/g, 'Intro to Hadith Terminology'],
+        [/مصطلح الحديث/g, 'Hadith Terminology'],
+        [/الذكاء الاصطناعي/g, 'Artificial Intelligence'],
+        [/تعلم الآلة/g, 'Machine Learning'], [/التعلم العميق/g, 'Deep Learning'],
+        [/تفاعل الإنسان والحاسب/g, 'Human-Computer Interaction'],
+        [/تطوير تطبيقات الويب/g, 'Web App Development'],
+        [/إدارة مشاريع تقنية المعلومات/g, 'IT Project Management'],
+        [/الأخلاقيات والابتكار المسؤول/g, 'Ethics & Responsible Innovation'],
+        [/تقنيات ريادة الأعمال/g, 'Entrepreneurship Technologies'],
+        [/الحوسبة السحابية/g, 'Cloud Computing'],
+        [/التنقيب عن البيانات/g, 'Data Mining'],
+        [/عرض وتصوير البيانات/g, 'Data Visualization'],
+        [/التطوير القائم على المنصات/g, 'Platform-Based Development'],
+        [/أمن البيانات وخصوصيتها/g, 'Data Security & Privacy'],
+        [/الأمن السيبراني/g, 'Cybersecurity'],
+        [/نظم التشغيل/g, 'Operating Systems'],
+        [/شبكات الحاسب/g, 'Computer Networks'],
+        [/قواعد البيانات/g, 'Databases'],
+        [/هياكل البيانات/g, 'Data Structures'],
+        [/الخوارزميات/g, 'Algorithms'],
+        [/مشروع التخرج/g, 'Graduation Project'],
+        [/رياضيات/g, 'Mathematics'], [/فيزياء/g, 'Physics'], [/كيمياء/g, 'Chemistry'],
+        [/مقدمة في/g, 'Intro to'], [/مدخل إلى/g, 'Intro to'], [/مبادئ/g, 'Principles of'], [/أساسيات/g, 'Fundamentals of']
+      ];
+      for (const [regex, rep] of map) {
+        tr = tr.replace(regex, rep);
+      }
+      return tr;
     }
 
     function getTranslatedInstructor(arName) {
-      if (!arName) return TRANSLATIONS[currentLang].notAssigned;
-      if (currentLang === 'en') {
-        if (INSTRUCTOR_TRANSLATIONS[arName]) return INSTRUCTOR_TRANSLATIONS[arName];
-        return arName.replace(/محمد/g, "Mohammed").replace(/احمد/g, "Ahmed").replace(/علي/g, "Ali").replace(/بن/g, "Bin");
+      if (!arName || typeof arName !== 'string') return TRANSLATIONS[currentLang].notAssigned;
+      const t = arName.trim();
+      if (t.length < 3 || t === 'التفاصيل' || t.includes('تفاصيل') || t === 'عرض' || t === 'لم يحدد' || t === 'لم يحدد من الكلية' || t === 'TBA' || t.match(/^[0-9:\-\s.+/\\_()]+$/)) {
+        return TRANSLATIONS[currentLang].notAssigned;
       }
-      return arName;
+      if (currentLang === 'en') {
+        if (INSTRUCTOR_TRANSLATIONS[t]) return INSTRUCTOR_TRANSLATIONS[t];
+        let enName = t
+          .replace(/د\.?\s*/g, 'Dr. ')
+          .replace(/أ\.?\s*د\.?\s*/g, 'Prof. ')
+          .replace(/أ\.?\s*/g, 'Mr. ')
+          .replace(/محمد/g, "Mohammed")
+          .replace(/احمد/g, "Ahmed")
+          .replace(/أحمد/g, "Ahmed")
+          .replace(/عبدالله/g, "Abdullah")
+          .replace(/عبد الله/g, "Abdullah")
+          .replace(/عبدالرحمن/g, "Abdulrahman")
+          .replace(/عبد الرحمن/g, "Abdulrahman")
+          .replace(/عبدالعزيز/g, "Abdulaziz")
+          .replace(/عبد العزيز/g, "Abdulaziz")
+          .replace(/علي/g, "Ali")
+          .replace(/سعيد/g, "Saeed")
+          .replace(/خالد/g, "Khalid")
+          .replace(/سلطان/g, "Sultan")
+          .replace(/سعود/g, "Saud")
+          .replace(/فهد/g, "Fahad")
+          .replace(/عمر/g, "Omar")
+          .replace(/يوسف/g, "Youssef")
+          .replace(/إبراهيم/g, "Ibrahim")
+          .replace(/ابراهيم/g, "Ibrahim")
+          .replace(/صالح/g, "Saleh")
+          .replace(/سالم/g, "Salem")
+          .replace(/حسن/g, "Hassan")
+          .replace(/حسين/g, "Hussein")
+          .replace(/بن/g, "Bin")
+          .replace(/آل/g, "Al-");
+        return enName;
+      }
+      return t;
     }
 
     function getTranslatedType(typeStr) {
