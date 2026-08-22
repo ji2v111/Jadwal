@@ -1421,7 +1421,8 @@
         return sections.map(s => s.sectionNumber).sort().join(',');
       }
 
-      // Systematic Exploration across ALL validSets with Day-Clustering Heuristic
+      // Pre-process validSets: build courseOptionsBase for each
+      const preparedSets = [];
       for (const item of validSets) {
         const cSet = item.set;
         const courseOptionsBase = [];
@@ -1453,84 +1454,75 @@
           courseOptionsBase.push({ code, opts });
         }
 
-        if (!possible) continue;
+        if (possible) {
+          courseOptionsBase.sort((a, b) => a.opts.length - b.opts.length);
+          preparedSets.push({ set: cSet, hours: item.hours, courseOptionsBase });
+        }
+      }
 
-        // MRV: sort courses by fewest section options first for rapid branch pruning
-        courseOptionsBase.sort((a, b) => a.opts.length - b.opts.length);
+      // Multi-Pass Pruning Search:
+      // Pass 1: maxDaysAllowed = 3 -> Seeks ALL schedules with >= 2 Days Off across ALL course sets!
+      // Pass 2: maxDaysAllowed = 4 -> Seeks ALL schedules with >= 1 Day Off!
+      // Pass 3: maxDaysAllowed = 5 -> Fills remaining quota with 0-off schedules if needed.
+      const passes = [3, 4, 5];
 
-        const currentStack = [];
-        let iterations = 0;
-        const MAX_ITER_PER_SET = 30000;
-        let countWithOff = 0;
-        let countZeroOff = 0;
+      for (const maxDaysAllowed of passes) {
+        if (allCandidates.length >= 1000) break;
 
-        function dfs(courseIdx) {
-          if (iterations >= MAX_ITER_PER_SET) return;
-          if (courseIdx === courseOptionsBase.length) {
-            const flat = currentStack.flat();
-            const fp = fingerprint(flat);
-            if (!seenFingerprints.has(fp)) {
-              seenFingerprints.add(fp);
-              const evalRes = evaluateSchedule(flat);
-              evalRes.courseSet = cSet;
-              evalRes.totalHours = item.hours;
+        for (const pSet of preparedSets) {
+          if (allCandidates.length >= 1000) break;
 
-              if (evalRes.daysOffCount > 0) {
-                countWithOff++;
-                allCandidates.push(evalRes);
-              } else if (countZeroOff < 50) {
-                countZeroOff++;
+          const { set: cSet, hours: setHours, courseOptionsBase } = pSet;
+          const currentStack = [];
+
+          function dfs(courseIdx, usedDays) {
+            if (allCandidates.length >= 1000) return;
+            if (courseIdx === courseOptionsBase.length) {
+              const flat = currentStack.flat();
+              const fp = fingerprint(flat);
+              if (!seenFingerprints.has(fp)) {
+                seenFingerprints.add(fp);
+                const evalRes = evaluateSchedule(flat);
+                evalRes.courseSet = cSet;
+                evalRes.totalHours = setHours;
                 allCandidates.push(evalRes);
               }
+              return;
             }
-            return;
-          }
 
-          // Heuristic Day-Clustering:
-          // Order candidate sections so sections sharing already-used days are visited first.
-          // This systematically discovers 3-off, 2-off, and 1-off schedules right at the start!
-          const usedDays = new Set();
-          for (const placed of currentStack) {
-            for (const s of placed) {
-              for (const sl of s.slots) usedDays.add(sl.day);
-            }
-          }
+            const rawUnits = courseOptionsBase[courseIdx].opts;
+            for (const unit of rawUnits) {
+              // Early Pruning: If adding this unit exceeds maxDaysAllowed, PRUNE BRANCH INSTANTLY!
+              const nextUsedDays = new Set(usedDays);
+              for (const sec of unit) {
+                for (const sl of sec.slots) nextUsedDays.add(sl.day);
+              }
+              if (nextUsedDays.size > maxDaysAllowed) continue;
 
-          const rawUnits = courseOptionsBase[courseIdx].opts;
-          const sortedUnits = [...rawUnits].sort((uA, uB) => {
-            let newDaysA = 0, newDaysB = 0;
-            for (const s of uA) for (const sl of s.slots) if (!usedDays.has(sl.day)) newDaysA++;
-            for (const s of uB) for (const sl of s.slots) if (!usedDays.has(sl.day)) newDaysB++;
-            return newDaysA - newDaysB;
-          });
-
-          for (const unit of sortedUnits) {
-            iterations++;
-            if (iterations >= MAX_ITER_PER_SET) break;
-
-            let conflict = false;
-            for (const placedUnit of currentStack) {
-              for (const secP of placedUnit) {
-                for (const secU of unit) {
-                  if (sectionsOverlap(secP, secU)) {
-                    conflict = true;
-                    break;
+              let conflict = false;
+              for (const placedUnit of currentStack) {
+                for (const secP of placedUnit) {
+                  for (const secU of unit) {
+                    if (sectionsOverlap(secP, secU)) {
+                      conflict = true;
+                      break;
+                    }
                   }
+                  if (conflict) break;
                 }
                 if (conflict) break;
               }
-              if (conflict) break;
-            }
 
-            if (!conflict) {
-              currentStack.push(unit);
-              dfs(courseIdx + 1);
-              currentStack.pop();
+              if (!conflict) {
+                currentStack.push(unit);
+                dfs(courseIdx + 1, nextUsedDays);
+                currentStack.pop();
+              }
             }
           }
-        }
 
-        dfs(0);
+          dfs(0, new Set());
+        }
       }
 
       if (allCandidates.length === 0) {
