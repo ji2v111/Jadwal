@@ -142,6 +142,12 @@
           </svg>
         </button>
 
+        <!-- Export JSON -->
+        <button onclick="exportCurrentRawJSON()" title="تصدير ملف البيانات JSON الحالي" class="bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-2xs">
+          <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span data-i18n="exportJsonBtn">تصدير JSON</span>
+        </button>
+
         <!-- Upload JSON -->
         <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold py-1.5 px-3 rounded-lg border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 shadow-2xs">
           <svg class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
@@ -520,6 +526,7 @@
         dayOffText: "يوم فراغ",
         notAssigned: "لم يحدد",
         uploadJsonBtn: "رفع JSON",
+        exportJsonBtn: "تصدير JSON",
         importCoursesBtn: "سحب المقررات",
         clearDataBtn: "مسح البيانات",
         prevBtnText: "السابق",
@@ -573,6 +580,7 @@
         dayOffText: "Day Off",
         notAssigned: "TBA",
         uploadJsonBtn: "Upload JSON",
+        exportJsonBtn: "Export JSON",
         importCoursesBtn: "Import Courses",
         clearDataBtn: "Clear Data",
         prevBtnText: "Prev",
@@ -592,7 +600,7 @@
     };
 
     const COURSE_TRANSLATIONS = {
-      // Islamic Studies & Sharia
+      // Islamic Studies, Sharia & Law
       "أحاديث الأحكام 1": "Ahadith Al-Ahkam 1",
       "أحاديث الأحكام 2": "Ahadith Al-Ahkam 2",
       "أحاديث الأحكام": "Ahadith Al-Ahkam",
@@ -601,6 +609,59 @@
       "المقدمة في مصطلح الحديث": "Intro to Hadith Terminology",
       "مقدمة في مصطلح الحديث": "Intro to Hadith Terminology",
       "مصطلح الحديث": "Hadith Terminology",
+      "فقه العبادات 1": "Fiqh of Worship 1",
+      "فقه العبادات 2": "Fiqh of Worship 2",
+      "فقه العبادات": "Fiqh of Worship",
+      "فقه المعاملات 1": "Fiqh of Transactions 1",
+      "فقه المعاملات 2": "Fiqh of Transactions 2",
+      "فقه المعاملات": "Fiqh of Transactions",
+      "فقه الأسرة": "Family Fiqh",
+      "فقه الجنايات": "Islamic Criminal Jurisprudence",
+      "فقه المواريث والفرائض": "Inheritance Law",
+      "فقه الفرائض": "Inheritance Law",
+      "فقه القضاء": "Judicial Jurisprudence",
+      "الحكم الشرعي": "Sharia Rulings",
+      "الحكم الشرعي وأقسامه": "Sharia Rulings",
+      "القواعد الفقهية": "Jurisprudential Principles",
+      "النظريات الفقهية": "Jurisprudential Theories",
+      "مقاصد الشريعة": "Objectives of Sharia",
+      "النظام الدستوري": "Constitutional Law",
+      "النظام الدستوري في المملكة": "Saudi Constitutional System",
+      "القانون الدستوري": "Constitutional Law",
+      "القضاء الإداري": "Administrative Judiciary",
+      "القانون الإداري": "Administrative Law",
+      "القانون الجنائي": "Criminal Law",
+      "القانون التجاري": "Commercial Law",
+      "القانون المدني": "Civil Law",
+      "القانون الدولي": "International Law",
+      "أصول الدعوة وطرقها": "Principles & Methods of Dawah",
+      "أصول الدعوة": "Principles of Dawah",
+      "مناهج الدعوة": "Methods of Dawah",
+      "تاريخ الدعوة": "History of Dawah",
+      "الحسبة والرقابة": "Hisbah & Oversight",
+      "الأديان والمذاهب": "Religions & Doctrines",
+      "الفرق والمذاهب": "Sects & Doctrines",
+      "مقارنة الأديان": "Comparative Religion",
+      "الاستشراق والتنصير": "Orientalism & Christianization",
+      "طرق الإثبات": "Methods of Proof",
+      "نظام المرافعات": "Civil Procedures Law",
+      "نظام الإجراءات الجزائية": "Criminal Procedures Law",
+      "نظام العمل": "Labor Law",
+      "نظام الشركات": "Corporate Law",
+      "الملكية الفكرية": "Intellectual Property",
+      "التحكيم التجاري": "Commercial Arbitration",
+      "أصول الفقه 1": "Principles of Jurisprudence 1",
+      "أصول الفقه 2": "Principles of Jurisprudence 2",
+      "أصول الفقه 3": "Principles of Jurisprudence 3",
+      "أصول الفقه 4": "Principles of Jurisprudence 4",
+      "أصول الفقه": "Principles of Jurisprudence",
+      "علوم القرآن": "Quranic Sciences",
+      "علوم الحديث": "Hadith Sciences",
+      "تفسير آيات الأحكام": "Tafseer of Legal Verses",
+      "تفسير 1": "Tafseer 1",
+      "تفسير 2": "Tafseer 2",
+      "حديث 1": "Hadith 1",
+      "حديث 2": "Hadith 2",
       "توحيد 1": "Tawheed 1",
       "توحيد 2": "Tawheed 2",
       "توحيد": "Tawheed",
@@ -625,10 +686,6 @@
       "العقيدة 2": "Islamic Creed 2",
       "فقه 1": "Islamic Jurisprudence 1",
       "فقه 2": "Islamic Jurisprudence 2",
-      "فقه العبادات": "Fiqh of Worship",
-      "فقه المعاملات": "Fiqh of Transactions",
-      "فقه الأسرة": "Family Fiqh",
-      "أصول الفقه": "Principles of Jurisprudence",
       "السيرة النبوية": "Prophetic Biography",
       "الثقافة الإسلامية": "Islamic Culture",
       "الثقافة الإسلامية 1": "Islamic Culture 1",
@@ -930,6 +987,21 @@
         [/القرآن الكريم/g, 'Holy Quran'], [/القران الكريم/g, 'Holy Quran'], [/قرآن/g, 'Quran'], [/قران/g, 'Quran'],
         [/العقيدة/g, 'Islamic Creed'], [/العقيده/g, 'Islamic Creed'],
         [/التوحيد/g, 'Tawheed'], [/توحيد/g, 'Tawheed'],
+        [/فقه العبادات/g, 'Fiqh of Worship'], [/فقه المعاملات/g, 'Fiqh of Transactions'], [/فقه الأسرة/g, 'Family Fiqh'],
+        [/فقه الجنايات/g, 'Islamic Criminal Jurisprudence'], [/فقه المواريث/g, 'Inheritance Law'], [/فقه الفرائض/g, 'Inheritance Law'],
+        [/فقه القضاء/g, 'Judicial Jurisprudence'], [/فقه/g, 'Fiqh of'],
+        [/الحكم الشرعي وأقسامه/g, 'Sharia Rulings'], [/الحكم الشرعي/g, 'Sharia Rulings'],
+        [/القواعد الفقهية/g, 'Jurisprudential Principles'], [/النظريات الفقهية/g, 'Jurisprudential Theories'],
+        [/مقاصد الشريعة/g, 'Objectives of Sharia'],
+        [/النظام الدستوري في المملكة/g, 'Saudi Constitutional System'], [/النظام الدستوري/g, 'Constitutional Law'],
+        [/القانون الدستوري/g, 'Constitutional Law'], [/القضاء الإداري/g, 'Administrative Judiciary'], [/القانون الإداري/g, 'Administrative Law'],
+        [/القانون الجنائي/g, 'Criminal Law'], [/القانون التجاري/g, 'Commercial Law'], [/القانون المدني/g, 'Civil Law'], [/القانون الدولي/g, 'International Law'],
+        [/أصول الدعوة وطرقها/g, 'Principles & Methods of Dawah'], [/أصول الدعوة/g, 'Principles of Dawah'], [/مناهج الدعوة/g, 'Methods of Dawah'],
+        [/أصول الفقه/g, 'Principles of Jurisprudence'],
+        [/الحسبة والرقابة/g, 'Hisbah & Oversight'], [/الأديان والمذاهب/g, 'Religions & Doctrines'], [/الفرق والمذاهب/g, 'Sects & Doctrines'],
+        [/طرق الإثبات/g, 'Methods of Proof'], [/نظام المرافعات/g, 'Civil Procedures Law'], [/نظام الإجراءات الجزائية/g, 'Criminal Procedures Law'],
+        [/نظام العمل/g, 'Labor Law'], [/نظام الشركات/g, 'Corporate Law'], [/الملكية الفكرية/g, 'Intellectual Property'], [/التحكيم التجاري/g, 'Commercial Arbitration'],
+        [/تفسير آيات الأحكام/g, 'Tafseer of Legal Verses'], [/تفسير/g, 'Tafseer'], [/حديث/g, 'Hadith'],
         [/قيم إسلامية/g, 'Islamic Values'], [/القيم الإسلامية/g, 'Islamic Values'],
         [/تاريخ المملكة العربية السعودية/g, 'History of Saudi Arabia'], [/تاريخ المملكة/g, 'History of Saudi Arabia'],
         [/أحاديث الأحكام/g, 'Ahadith Al-Ahkam'], [/احاديث الاحكام/g, 'Ahadith Al-Ahkam'],
@@ -1763,6 +1835,21 @@
       navigator.clipboard.writeText(lines.join('\n')).then(() => {
         showToast(currentLang === 'en' ? 'All sections copied to clipboard!' : 'تم نسخ جميع الشعب والمقررات!');
       });
+    }
+
+    function exportCurrentRawJSON() {
+      if (!rawData || rawData.length === 0) {
+        showToast(currentLang === 'en' ? 'No JSON data loaded to export' : 'لا توجد بيانات JSON محملة حالياً');
+        return;
+      }
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rawData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "sections_data.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast(currentLang === 'en' ? 'JSON exported successfully!' : 'تم تصدير ملف JSON بنجاح!');
     }
 
     function exportAsPNG() {

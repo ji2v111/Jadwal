@@ -1,6 +1,6 @@
 // =========================================================================
 // JADWAL - أداة سحب المقررات التلقائية الشاملة من بوابات الجامعات
-// v3.1 - تنظيف متقدم للساعات والمحاضرين وتجميع البيانات تلقائياً
+// v3.2 - استخراج دقيق لأسماء المحاضرين وحذف نصوص الأزرار والتفاصيل
 // =========================================================================
 
 (async function() {
@@ -96,68 +96,88 @@
     });
   }
 
+  // دالة تنظيف واستخراج اسم المحاضر بدقة
+  function cleanInstructorText(raw) {
+    if (!raw || typeof raw !== 'string') return '';
+    let t = raw
+      .replace(/التفاصيل/g, '')
+      .replace(/تفاصيل/g, '')
+      .replace(/عرض/g, '')
+      .replace(/Details/gi, '')
+      .replace(/View/gi, '')
+      .replace(/[\r\n\t]+/g, ' ')
+      .trim();
+
+    // إزالة الزوائد مثل الأقواس أو الأرقام
+    t = t.replace(/\s+/g, ' ').trim();
+    if (t === 'لم يحدد' || t === 'لم يحدد من الكلية' || t === 'TBA') return 'لم يحدد من الكلية';
+    if (t.length < 3) return '';
+    if (t.match(/^[0-9:\-\s.+/\\_()]+$/)) return '';
+    // استبعاد الكلمات غير الدالة على أسماء
+    const nonNameTokens = ['نظري', 'عملي', 'مفتوحة', 'مغلقة', 'ساعات', 'ساعة', 'معتمدة', 'قاعة', 'مبنى', 'شعبة'];
+    if (nonNameTokens.some(tok => t === tok)) return '';
+    return t;
+  }
+
   function extractInstructorFromRow(row, cells, colInst) {
-    if (!row && !cells) return '';
-    
-    // كلمات الواجهة والأزرار التي يجب استبعادها تماماً
-    const UI_WORDS = [
-      'التفاصيل', 'تفاصيل', 'عرض', 'تعديل', 'حذف', 'إضافة', 'تسجيل', 'إلغاء', 
-      'بحث', 'اختيار', 'تحديد', 'موافق', 'رجوع', 'المزيد', 'أكثر', 'details', 
-      'view', 'edit', 'delete', 'more', 'شعبة', 'قاعة', 'مبنى', 'نظري', 'عملي',
-      'مفتوحة', 'مغلقة', 'ساعات', 'ساعة', 'معتمدة'
-    ];
-    
-    function isValidInstructorName(text) {
-      if (!text || typeof text !== 'string') return false;
-      const t = text.trim();
-      if (t.length < 3) return false;
-      if (UI_WORDS.some(w => t === w || t.toLowerCase() === w)) return false;
-      if (t.match(/^[0-9:\-\s.+/\\_()]+$/)) return false;
-      if (t === 'لم يحدد' || t === 'لم يحدد من الكلية' || t === 'TBA') return true;
-      // يجب ألا يحتوي على كلمات واجهة شائعة مثل التفاصيل
-      if (t.includes('التفاصيل') || t.includes('تفاصيل')) return false;
-      return true;
-    }
-    
-    // 1. Direct ID / Class match inside the row
+    if (!row && !cells) return 'لم يحدد من الكلية';
+
+    // 1. فحص عناصر الـ DOM المباشرة التي تحتوي على معرّف أو كلاس المحاضر
     if (row) {
       const el = row.querySelector('[id*="instructor"], [id*="faculty"], [id*="teacher"], [id*="staff"], [id*="emp"], [class*="instructor"], [class*="faculty"], [class*="teacher"]');
       if (el) {
-        const titleAttr = el.getAttribute('title') || el.getAttribute('aria-label') || '';
-        if (titleAttr && isValidInstructorName(titleAttr)) return titleAttr.trim();
-        const txt = el.innerText.trim();
-        if (txt && isValidInstructorName(txt)) return txt;
+        const titleAttr = cleanInstructorText(el.getAttribute('title') || el.getAttribute('aria-label') || '');
+        if (titleAttr && titleAttr.length >= 3) return titleAttr;
+        const txt = cleanInstructorText(el.innerText || '');
+        if (txt && txt.length >= 3) return txt;
       }
     }
 
-    // 2. Column header match
+    // 2. فحص عمود المحاضر المحدد بالهيدر
     if (colInst !== -1 && cells && cells[colInst]) {
-      const txt = cells[colInst].trim();
-      if (isValidInstructorName(txt)) return txt;
+      const txt = cleanInstructorText(cells[colInst]);
+      if (txt && txt.length >= 3) return txt;
     }
 
-    // 3. Scan all elements for title/aria-label containing name prefixes
+    // 3. فحص الخلايا td وإزالة أزرار وروابط "التفاصيل"
     if (row) {
-      const allElements = row.querySelectorAll('td, span, a, div, label');
-      for (const el of allElements) {
-        const title = el.getAttribute('title') || el.getAttribute('aria-label') || '';
-        if (title && isValidInstructorName(title) && (title.includes('د.') || title.includes('أ.') || title.includes('دكتور') || title.includes('أستاذ') || title.split(/\s+/).length >= 2)) {
-          return title.trim();
+      const tds = Array.from(row.querySelectorAll('td'));
+      for (let i = 2; i < tds.length; i++) {
+        const td = tds[i];
+        // استنساخ الخلية وحذف عناصر الروابط غير المرغوبة
+        const clone = td.cloneNode(true);
+        clone.querySelectorAll('a, button, script, style, .ui-commandlink, .ui-button').forEach(btn => {
+          const bText = (btn.innerText || '').trim();
+          if (bText.includes('تفاصيل') || bText.includes('عرض') || bText.includes('Details') || bText.includes('View')) {
+            btn.remove();
+          }
+        });
+        const txt = cleanInstructorText(clone.innerText || '');
+        if (txt && txt.length >= 3) {
+          // إذا كان يحتوي على بادئة دكتور أو أستاذ أو يحتوي على كلمتين عربيتين على الأقل
+          if (txt.includes('د.') || txt.includes('أ.') || txt.includes('دكتور') || txt.includes('أستاذ') || txt.includes('د/') || txt.includes('أ/')) {
+            return txt;
+          }
+          const words = txt.split(/\s+/);
+          if (words.length >= 2 && words.length <= 6 && !txt.match(/[0-9]/)) {
+            return txt;
+          }
         }
       }
     }
 
-    // 4. Scan cell text for Arabic names (excluding cells that match numbers or UI)
+    // 4. الفحص عبر مصفوفة الخلايا النصية
     if (cells && cells.length > 0) {
       for (let i = 2; i < cells.length; i++) {
-        const text = cells[i].trim();
-        if (!isValidInstructorName(text)) continue;
-        if (text.includes('د.') || text.includes('أ.') || text.includes('دكتور') || text.includes('أستاذ') || text.includes('د/') || text.includes('أ/')) {
-          return text;
-        }
-        const words = text.split(/\s+/);
-        if (words.length >= 3 && words.length <= 6 && !text.match(/[0-9]/)) {
-          return text;
+        const txt = cleanInstructorText(cells[i]);
+        if (txt && txt.length >= 3) {
+          if (txt.includes('د.') || txt.includes('أ.') || txt.includes('دكتور') || txt.includes('أستاذ') || txt.includes('د/') || txt.includes('أ/')) {
+            return txt;
+          }
+          const words = txt.split(/\s+/);
+          if (words.length >= 2 && words.length <= 6 && !txt.match(/[0-9]/)) {
+            return txt;
+          }
         }
       }
     }
@@ -189,7 +209,7 @@
         const cells = row ? Array.from(row.querySelectorAll('td')).map(c => c.innerText.trim()) : [];
         const instName = extractInstructorFromRow(row, cells, colInst);
         
-        // Extract credit hours from detected column OR default to cells[4]
+        // استخراج الساعات المعتمدة
         let rawHours = colHours !== -1 ? cells[colHours] : '';
         if (!rawHours && cells[4] && cells[4].match(/^[1-8]$/)) {
           rawHours = cells[4];
